@@ -11,14 +11,12 @@ using Ed = Autodesk.AutoCAD.EditorInput;
 using Gem = Autodesk.AutoCAD.Geometry;
 using Rtm = Autodesk.AutoCAD.Runtime;
 
-// [assembly: Rtm.CommandClass(typeof(MyClassSerializer.Commands))]
-
 namespace dynIN_dynOUT
 {
-    public class Commands
+    internal static class DynIN
     {
-        [Rtm.CommandMethod("AddLine")]
-        static public void AddLine()
+
+        internal static void IN()
         {
             // Получение текущего документа и базы данных
             App.Document acDoc = App.Application.DocumentManager.MdiActiveDocument;
@@ -43,5 +41,7 @@ namespace dynIN_dynOUT
                 acTrans.Commit();
             }
         }
+
+
     }
 }

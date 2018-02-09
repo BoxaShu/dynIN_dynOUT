@@ -33,15 +33,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AcCoreMgd">
-      <HintPath>..\..\..\..\ObjectARX\ObjectARX 2014\inc\AcCoreMgd.dll</HintPath>
+      <HintPath>..\..\..\..\..\_SDK\Autodesk\Autocad\ObjectARX_2017\inc\AcCoreMgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="AcDbMgd">
-      <HintPath>..\..\..\..\ObjectARX\ObjectARX 2014\inc\AcDbMgd.dll</HintPath>
+      <HintPath>..\..\..\..\..\_SDK\Autodesk\Autocad\ObjectARX_2017\inc\AcDbMgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="AcMgd">
-      <HintPath>..\..\..\..\ObjectARX\ObjectARX 2014\inc\AcMgd.dll</HintPath>
+      <HintPath>..\..\..\..\..\_SDK\Autodesk\Autocad\ObjectARX_2017\inc\AcMgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -53,7 +53,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="Commands.cs" />
+    <Compile Include="DynIN.cs" />
+    <Compile Include="DynOUT.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
