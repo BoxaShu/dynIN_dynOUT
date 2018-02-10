@@ -128,12 +128,14 @@ namespace dynIN_dynOUT
         [Rtm.CommandMethod("dynIN")]
         static public void dynIN()
         {
+            //Читаем данные из txt файла
             DynIN.IN();
         }
 
         [Rtm.CommandMethod("dynOUT")]
         static public void dynOUT()
         {
+            //Сохраняем данные в txt файл
             DynOUT.OUT();
         }
     }

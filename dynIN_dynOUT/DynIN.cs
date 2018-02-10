@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Autodesk.AutoCAD.Windows;
 using App = Autodesk.AutoCAD.ApplicationServices;
 using cad = Autodesk.AutoCAD.ApplicationServices.Application;
 using Db = Autodesk.AutoCAD.DatabaseServices;
@@ -13,14 +13,51 @@ using Rtm = Autodesk.AutoCAD.Runtime;
 
 namespace dynIN_dynOUT
 {
+    /// <summary>
+    /// Читаем данные из txt файла
+    /// </summary>
     internal static class DynIN
     {
 
         internal static void IN()
         {
+
+            //1. Читаем и парсим файл
+            OpenFileDialog openFileDialog = new OpenFileDialog("Выберите txt файл",
+                                          "*.txt",
+                                          "txt",
+                                          "Выбор файла",
+                                          OpenFileDialog.OpenFileDialogFlags.NoUrls);
+
+            if (openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            string fileName = openFileDialog.Filename;
+
+
+
+            List<string> fileLines = System.IO.File.ReadAllLines(fileName, Encoding.Default).ToList();
+            List<Property> propertyList = new List<Property>();
+
+            foreach(string s in fileLines)
+            {
+                Property prop = new Property();
+                List<string> l = s.Split('\t').ToList();
+                
+
+                propertyList.Add(prop);
+            }
+
+
+
+
             // Получение текущего документа и базы данных
             App.Document acDoc = App.Application.DocumentManager.MdiActiveDocument;
+            if (acDoc == null) return;
             Db.Database acCurDb = acDoc.Database;
+            Ed.Editor acEd = acDoc.Editor;
+
+
+
+
             // старт транзакции
             using (Db.Transaction acTrans = acCurDb.TransactionManager.StartOpenCloseTransaction())
             {
@@ -40,6 +77,10 @@ namespace dynIN_dynOUT
                 // Сохранение нового объекта в базе данных
                 acTrans.Commit();
             }
+
+
+            //5. Оповещаем пользователя о завершении работы
+            acEd.WriteMessage($"\nЭкспорт завершен.");
         }
 
 
