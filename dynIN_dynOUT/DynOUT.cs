@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -115,6 +116,10 @@ namespace dynIN_dynOUT
                                             acEd.WriteMessage($"\nВ блоке {blr_nam} придутствуют динамические свойства с одинаковыми именами");
                                     }
                                 }
+
+
+                                propertyList.Add(prop);
+
                             }   //Проверка, что объект это ссылка на блок
                         }
                     }
@@ -124,13 +129,84 @@ namespace dynIN_dynOUT
             }
 
 
-            //4. Выводим собранные данные в файл
-            foreach(var s in propertyList)
-            {
+            //4. Формируем одну большую таблицу с данными
+            //4.1 Считаем общее количество уникальны тегов атрибутов и уникальных названй динамических свойств
+            List<string> unicAttName = new List<string>();
+            List<string> unicDynName = new List<string>();
 
+            foreach (var s in propertyList)
+            {
+                foreach (var i in s.Attribut)
+                    if(!unicAttName.Contains("a_" + i.Key)) unicAttName.Add("a_"+i.Key);
+
+                foreach (var i in s.DynProp)
+                    if (!unicDynName.Contains("d_" + i.Key)) unicDynName.Add("d_"+i.Key);
             }
 
-            //5. Оповещаем пользователя о завершении работы
+
+            //4.2 Заполняем массив
+            List<string[]> rowList = new List<string[]>();
+
+            List <string>rowHead = new List<string>();
+            rowHead.Add("Handle");
+            rowHead.AddRange(unicAttName);
+            rowHead.AddRange(unicDynName);
+
+
+            rowList.Add(rowHead.ToArray());
+
+            int colCount = rowHead.Count;
+
+
+            foreach (var s in propertyList)
+            {
+                string[] row = new string[colCount];
+                for(int i =0; i< row.Length; i++)
+                    row [i]= "\t";
+
+
+                row[0] = s.Handle.ToString();
+
+                foreach (var i in s.Attribut)
+                {
+                    int indxUnicAttName = unicAttName.FindIndex(x => x == "a_" + i.Key);
+                    row[1 + indxUnicAttName] = i.Value;
+                }
+
+                foreach (var i in s.DynProp)
+                {
+                    int indxUnicDynName = unicDynName.FindIndex(x => x == "d_" + i.Key);
+                    row[1 + unicAttName.Count+ indxUnicDynName] = i.Value.ToString() ;
+                }
+
+                rowList.Add(row);
+            }
+
+
+            //5. Выводим собранные данные в файл
+            try
+            {
+                using (StreamWriter sw = new StreamWriter(fileName, false, System.Text.Encoding.ASCII))
+                {
+                    foreach (var s in rowList)
+                    {
+                        sw.WriteLine(String.Join("\t",s));
+                    }
+                }
+
+                //using (StreamWriter sw = new StreamWriter(fileName, true, System.Text.Encoding.Default))
+                //{
+                //    sw.WriteLine("Дозапись");
+                //    sw.Write(4.5);
+                //}
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"\nОшибка записи в файл: {e.Message}");
+            }
+
+
+            //6. Оповещаем пользователя о завершении работы
             acEd.WriteMessage($"\nЭкспорт завершен.");
 
         }

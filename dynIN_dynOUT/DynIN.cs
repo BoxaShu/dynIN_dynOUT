@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,6 +23,12 @@ namespace dynIN_dynOUT
         internal static void IN()
         {
 
+            // Получение текущего документа и базы данных
+            App.Document acDoc = App.Application.DocumentManager.MdiActiveDocument;
+            if (acDoc == null) return;
+            Db.Database acCurDb = acDoc.Database;
+            Ed.Editor acEd = acDoc.Editor;
+
             //1. Читаем и парсим файл
             OpenFileDialog openFileDialog = new OpenFileDialog("Выберите txt файл",
                                           "*.txt",
@@ -34,7 +41,24 @@ namespace dynIN_dynOUT
 
 
 
-            List<string> fileLines = System.IO.File.ReadAllLines(fileName, Encoding.Default).ToList();
+            List<string> fileLines =  new List<string>();
+            try
+            {
+                //using (StreamReader sr = new StreamReader(fileName, System.Text.Encoding.Default))
+                //{
+                //   fileLines = sr.ReadToEnd().Split('\n').ToList();
+                //}
+
+               fileLines = System.IO.File.ReadAllLines(fileName, Encoding.Default).ToList();
+            }
+            catch (Exception e)
+            {
+                acEd.WriteMessage($"\nОшибка чтения файла: {e.Message}");
+                return;
+            }
+
+
+
             List<Property> propertyList = new List<Property>();
 
             foreach(string s in fileLines)
@@ -49,11 +73,7 @@ namespace dynIN_dynOUT
 
 
 
-            // Получение текущего документа и базы данных
-            App.Document acDoc = App.Application.DocumentManager.MdiActiveDocument;
-            if (acDoc == null) return;
-            Db.Database acCurDb = acDoc.Database;
-            Ed.Editor acEd = acDoc.Editor;
+
 
 
 
