@@ -61,11 +61,31 @@ namespace dynIN_dynOUT
 
             List<Property> propertyList = new List<Property>();
 
-            foreach(string s in fileLines)
+            //Парсим первую строку
+            List<string> unicAttName = new List<string>();
+            List<string> unicDynName = new List<string>();
+
+            List<string> l = fileLines[0].Split('\t').ToList();
+            foreach(string s in l)
+            {
+                if (s.Substring(0, 2) == "a_") unicAttName.Add(s);
+                if (s.Substring(0, 2) == "d_") unicDynName.Add(s);
+            }
+
+
+
+
+
+
+            //арсим основное тело
+
+            for (int i =1; i < fileLines.Count;  i++)
             {
                 Property prop = new Property();
-                List<string> l = s.Split('\t').ToList();
-                
+
+                l = fileLines[i].Split('\t').ToList();
+
+                prop.Handle = long.Parse(l[0]);
 
                 propertyList.Add(prop);
             }
