@@ -8,40 +8,41 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>dynIN_dynOUT</RootNamespace>
-    <AssemblyName>dynIN_dynOUT</AssemblyName>
+    <AssemblyName>dynINOUT_2015</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\_Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <StartAction>Program</StartAction>
-    <StartProgram>C:\Program Files\Autodesk\AutoCAD 2014\acad.exe</StartProgram>
+    <StartProgram>C:\Program Files\Autodesk\AutoCAD 2015\acad.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\_Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AcCoreMgd">
-      <HintPath>..\..\..\..\..\_SDK\Autodesk\Autocad\ObjectARX_2017\inc\AcCoreMgd.dll</HintPath>
+      <HintPath>..\..\..\..\..\_SDK\Autodesk\Autocad\ObjectARX_2015\inc\AcCoreMgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="AcDbMgd">
-      <HintPath>..\..\..\..\..\_SDK\Autodesk\Autocad\ObjectARX_2017\inc\AcDbMgd.dll</HintPath>
+      <HintPath>..\..\..\..\..\_SDK\Autodesk\Autocad\ObjectARX_2015\inc\AcDbMgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="AcMgd">
-      <HintPath>..\..\..\..\..\_SDK\Autodesk\Autocad\ObjectARX_2017\inc\AcMgd.dll</HintPath>
+      <HintPath>..\..\..\..\..\_SDK\Autodesk\Autocad\ObjectARX_2015\inc\AcMgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -54,19 +55,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Commands.cs" />
-    <Compile Include="DynIN.cs" />
-    <Compile Include="DynOUT.cs" />
+    <Compile Include="..\dynINOUT_2017\Commands.cs">
+      <Link>Commands.cs</Link>
+    </Compile>
+    <Compile Include="..\dynINOUT_2017\DynIN.cs">
+      <Link>DynIN.cs</Link>
+    </Compile>
+    <Compile Include="..\dynINOUT_2017\DynOUT.cs">
+      <Link>DynOUT.cs</Link>
+    </Compile>
+    <Compile Include="..\dynINOUT_2017\Property.cs">
+      <Link>Property.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Property.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\README.md">
-      <Link>README.md</Link>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="License.txt" />
+    <Content Include="..\dynINOUT_2017\License.txt">
+      <Link>License.txt</Link>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

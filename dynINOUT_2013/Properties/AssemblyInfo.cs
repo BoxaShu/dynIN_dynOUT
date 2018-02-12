@@ -5,13 +5,13 @@ using System.Runtime.InteropServices;
 // Управление общими сведениями о сборке осуществляется с помощью 
 // набора атрибутов. Измените значения этих атрибутов, чтобы изменить сведения,
 // связанные со сборкой.
-[assembly: AssemblyTitle("dynIN_dynOUT")]
+[assembly: AssemblyTitle("dynInOut")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("dynIN_dynOUT")]
-[assembly: AssemblyCopyright("Copyright ©  2014")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCompany("Шульжицкий")]
+[assembly: AssemblyProduct("dynInOut")]
+[assembly: AssemblyCopyright("Шульжицкий ©  2018")]
+[assembly: AssemblyTrademark("Шульжицкий")]
 [assembly: AssemblyCulture("")]
 
 // Параметр ComVisible со значением FALSE делает типы в сборке невидимыми 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номер построения и номер редакции по умолчанию, 
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
