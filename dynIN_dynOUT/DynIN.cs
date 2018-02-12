@@ -49,7 +49,16 @@ namespace dynIN_dynOUT
                 //   fileLines = sr.ReadToEnd().Split('\n').ToList();
                 //}
 
-               fileLines = System.IO.File.ReadAllLines(fileName, Encoding.Default).ToList();
+                //using (StreamWriter sw = new StreamWriter(fileName, false, System.Text.Encoding.GetEncoding(1251)))
+                //{
+                //    foreach (var s in rowList)
+                //    {
+                //        sw.WriteLine(String.Join("\t", s));
+                //    }
+                //}
+
+
+                fileLines = System.IO.File.ReadAllLines(fileName, System.Text.Encoding.GetEncoding(1251)).ToList();
             }
             catch (Exception e)
             {
@@ -68,8 +77,14 @@ namespace dynIN_dynOUT
             List<string> l = fileLines[0].Split('\t').ToList();
             foreach(string s in l)
             {
-                if (s.Substring(0, 2) == "a_") unicAttName.Add(s);
-                if (s.Substring(0, 2) == "d_") unicDynName.Add(s);
+                if (s.Substring(0, 2) == "a_")
+                {
+                    unicAttName.Add(s.Substring(2, s.Length-2));
+                }
+                if (s.Substring(0, 2) == "d_")
+                {
+                    unicDynName.Add(s.Substring(2, s.Length - 2));
+                }
             }
 
 
@@ -77,15 +92,35 @@ namespace dynIN_dynOUT
 
 
 
-            //арсим основное тело
-
-            for (int i =1; i < fileLines.Count;  i++)
+            //Парсим основное тело
+            for (int i = 1; i < fileLines.Count;  i++)
             {
                 Property prop = new Property();
 
                 l = fileLines[i].Split('\t').ToList();
 
                 prop.Handle = long.Parse(l[0]);
+
+                //Нужно соотнести значение с названием параметра
+                for(int j =1; j < l.Count; j++)
+                {
+                    if (l[j] != "")
+                    {
+                        //Если индекс ячейки со значением лежит в обрасти занчений атрибутов
+                        // TODO заменить постоянный расчет диапазонов на простые переменные
+                        if (1 + j > 1 && 1+j < 1+ unicAttName.Count)
+                        {
+                            prop.Attribut.Add(unicAttName[j-1], l[j]);
+                        }
+
+                        if (1 + j > 1+ unicAttName.Count )
+                        {
+                            int p = j - 1 - unicAttName.Count;
+                            prop.DynProp.Add(unicDynName[p], l[j]);
+                        }
+
+                    }
+                }
 
                 propertyList.Add(prop);
             }
@@ -95,27 +130,115 @@ namespace dynIN_dynOUT
 
 
 
-
-
-
-            // старт транзакции
-            using (Db.Transaction acTrans = acCurDb.TransactionManager.StartOpenCloseTransaction())
+            //Блокируем документ
+            using (App.DocumentLock docloc = acDoc.LockDocument())
             {
-                // Открытие таблицы Блоков для чтения
-                Db.BlockTable acBlkTbl = acTrans.GetObject(acCurDb.BlockTableId, Db.OpenMode.ForRead) as Db.BlockTable;
 
-                // Открытие записи таблицы Блоков пространства Модели для записи
-                Db.BlockTableRecord acBlkTblRec = acTrans.GetObject(acBlkTbl[Db.BlockTableRecord.ModelSpace],
-                                                                                Db.OpenMode.ForWrite) as Db.BlockTableRecord;
 
-                // Создание отрезка начинающегося в 0,0 и заканчивающегося в 5,5
-                Db.Line acLine = new Db.Line(new Gem.Point3d(0, 0, 0), new Gem.Point3d(5, 5, 0));
-                acLine.SetDatabaseDefaults();
-                // Добавление нового объекта в запись таблицы блоков и в транзакцию
-                acBlkTblRec.AppendEntity(acLine);
-                acTrans.AddNewlyCreatedDBObject(acLine, true);
-                // Сохранение нового объекта в базе данных
-                acTrans.Commit();
+                // старт транзакции
+                using (Db.Transaction acTrans = acCurDb.TransactionManager.StartOpenCloseTransaction())
+                {
+
+                    foreach (var prop in propertyList)
+                    {
+                        Db.ObjectId id = Db.ObjectId.Null;
+                        try
+                        {
+                            Db.Handle h = new Db.Handle(prop.Handle);
+                            id = acCurDb.GetObjectId(false, h, 0);
+
+                        }
+                        catch (Exception e)
+                        {
+
+                            acEd.WriteMessage($"\nОшибка поиска объекта: {e.Message}");
+                            //return;
+                        }
+
+                        //Если не нашли, идем к следующему объекту
+                        if (id == null) break;
+
+                        //Полученный объект вообще блок, если нет то переходим к следующему
+                        if (!id.ObjectClass.IsDerivedFrom(Rtm.RXObject.GetClass(typeof(Db.BlockReference)))) break;
+
+
+                        Db.BlockReference acBlRef = acTrans.GetObject(id, Db.OpenMode.ForWrite) as Db.BlockReference;
+                        Db.BlockTableRecord blr = (Db.BlockTableRecord)acTrans.GetObject(acBlRef.DynamicBlockTableRecord,
+                                                                    Db.OpenMode.ForRead);
+                        Db.BlockTableRecord blr_nam = (Db.BlockTableRecord)acTrans.GetObject(blr.ObjectId,
+                                                                                    Db.OpenMode.ForRead);
+
+
+                        if (blr.HasAttributeDefinitions)
+                        {
+                            Db.AttributeCollection attrCol = acBlRef.AttributeCollection;
+                            if (attrCol.Count > 0)
+                            {
+                                foreach (Db.ObjectId AttID in attrCol)
+                                {
+                                    Db.AttributeReference acAttRef = acTrans.GetObject(AttID,
+                                                            Db.OpenMode.ForWrite) as Db.AttributeReference;
+
+                                    foreach (var i in prop.Attribut)
+                                    {
+                                        if (acAttRef.Tag == i.Key)
+                                        {
+                                            acAttRef.TextString = i.Value;
+                                            break;
+                                        }
+                                        
+                                    }
+
+                                }
+                            }   //Проверка что кол аттрибутов больше 0
+                        }  //Проверка наличия атрибутов
+
+
+                        Db.DynamicBlockReferencePropertyCollection acBlockDynProp = acBlRef.DynamicBlockReferencePropertyCollection;
+                        if (acBlockDynProp != null)
+                        {
+                            foreach (Db.DynamicBlockReferenceProperty obj in acBlockDynProp)
+                            {
+
+                                //if (obj.PropertyName != "Origin")
+                                //{
+                                //    if (!prop.DynProp.ContainsKey(obj.PropertyName))
+
+                                //        prop.DynProp.Add(obj.PropertyName, obj.Value);
+                                //    else
+                                //        acEd.WriteMessage($"\nВ блоке {blr_nam} придутствуют динамические свойства с одинаковыми именами");
+                                //}
+
+
+                                foreach (var i in prop.DynProp)
+                                {
+                                    if (obj.PropertyName == i.Key)
+                                    {
+                                        //Нужно проверить тип объекта
+                                        if(obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Angular 
+                                            || obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Distance 
+                                            || obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Distance)
+                                        {
+                                            obj.Value = double.Parse(i.Value.ToString());
+                                        }
+
+                                        //http://adn-cis.org/forum/index.php?topic=603.msg2033#msg2033
+                                        if (obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.NoUnits)
+                                        {
+
+                                        }
+
+                                    }
+
+                                }
+
+
+                            }
+                        }
+                    }
+
+                    acTrans.Commit();
+                }
             }
 
 

@@ -59,75 +59,83 @@ namespace dynIN_dynOUT
             List<Property> propertyList = new List<Property>();
 
 
-            using (Db.Transaction acTrans = acCurDb.TransactionManager.StartOpenCloseTransaction())
+            //Блокируем документ
+            using (App.DocumentLock docloc = acDoc.LockDocument())
             {
-                Ed.SelectionSet acSSet = psr.Value;
-
-                foreach (Ed.SelectedObject acSSObj in acSSet)
+                using (Db.Transaction acTrans = acCurDb.TransactionManager.StartOpenCloseTransaction())
                 {
-                    if (acSSObj != null)
+                    Ed.SelectionSet acSSet = psr.Value;
+
+                    foreach (Ed.SelectedObject acSSObj in acSSet)
                     {
-                        Db.Entity acEnt = acTrans.GetObject(acSSObj.ObjectId,
-                                                 Db.OpenMode.ForRead) as Db.Entity;
-                        if (acEnt != null)
+                        if (acSSObj != null)
                         {
-                            if (acEnt is Db.BlockReference)
+                            Db.Entity acEnt = acTrans.GetObject(acSSObj.ObjectId,
+                                                     Db.OpenMode.ForRead) as Db.Entity;
+                            if (acEnt != null)
                             {
-                                Property prop = new Property();
-
-
-                                Db.BlockReference acBlRef = (Db.BlockReference)acEnt;
-                                Db.BlockTableRecord blr = (Db.BlockTableRecord)acTrans.GetObject(acBlRef.DynamicBlockTableRecord,
-                                                                                                Db.OpenMode.ForRead);
-                                Db.BlockTableRecord blr_nam = (Db.BlockTableRecord)acTrans.GetObject(blr.ObjectId,
-                                                                                            Db.OpenMode.ForRead);
-
-                                prop.Handle = acEnt.Handle.Value;
-
-                                if (blr.HasAttributeDefinitions)
+                                if (acEnt is Db.BlockReference)
                                 {
-                                    Db.AttributeCollection attrCol = acBlRef.AttributeCollection;
-                                    if (attrCol.Count > 0)
-                                    {
-                                        foreach (Db.ObjectId AttID in attrCol)
-                                        {
-                                            Db.AttributeReference acAttRef = acTrans.GetObject(AttID,
-                                                                    Db.OpenMode.ForRead) as Db.AttributeReference;
+                                    Property prop = new Property();
 
-                                            //TODO Необходимо проверить и учесть наличие полей
-                                            if (!prop.Attribut.ContainsKey(acAttRef.Tag))
-                                                prop.Attribut.Add(acAttRef.Tag, acAttRef.TextString);
-                                            else
-                                                acEd.WriteMessage($"\nВ блоке {blr_nam} придутствуют атрибуты с одинаковыми тегами");
+
+                                    Db.BlockReference acBlRef = (Db.BlockReference)acEnt;
+                                    Db.BlockTableRecord blr = (Db.BlockTableRecord)acTrans.GetObject(acBlRef.DynamicBlockTableRecord,
+                                                                                                    Db.OpenMode.ForRead);
+                                    Db.BlockTableRecord blr_nam = (Db.BlockTableRecord)acTrans.GetObject(blr.ObjectId,
+                                                                                                Db.OpenMode.ForRead);
+
+                                    prop.Handle = acEnt.Handle.Value;
+
+                                    if (blr.HasAttributeDefinitions)
+                                    {
+                                        Db.AttributeCollection attrCol = acBlRef.AttributeCollection;
+                                        if (attrCol.Count > 0)
+                                        {
+                                            foreach (Db.ObjectId AttID in attrCol)
+                                            {
+                                                Db.AttributeReference acAttRef = acTrans.GetObject(AttID,
+                                                                        Db.OpenMode.ForRead) as Db.AttributeReference;
+
+                                                //TODO Необходимо проверить и учесть наличие полей
+                                                if (!prop.Attribut.ContainsKey(acAttRef.Tag))
+                                                    prop.Attribut.Add(acAttRef.Tag, acAttRef.TextString);
+                                                else
+                                                    acEd.WriteMessage($"\nВ блоке {blr_nam} придутствуют атрибуты с одинаковыми тегами");
+
+                                            }
+                                        }   //Проверка что кол аттрибутов больше 0
+                                    }  //Проверка наличия атрибутов
+
+
+                                    Db.DynamicBlockReferencePropertyCollection acBlockDynProp = acBlRef.DynamicBlockReferencePropertyCollection;
+                                    if (acBlockDynProp != null)
+                                    {
+                                        foreach (Db.DynamicBlockReferenceProperty obj in acBlockDynProp)
+                                        {
+                                            if (obj.PropertyName != "Origin")
+                                            {
+                                                if (!prop.DynProp.ContainsKey(obj.PropertyName))
+
+                                                    prop.DynProp.Add(obj.PropertyName, obj.Value);
+                                                else
+                                                    acEd.WriteMessage($"\nВ блоке {blr_nam} придутствуют динамические свойства с одинаковыми именами");
+                                            }
 
                                         }
-                                    }   //Проверка что кол аттрибутов больше 0
-                                }  //Проверка наличия атрибутов
-
-
-                                Db.DynamicBlockReferencePropertyCollection acBlockDynProp = acBlRef.DynamicBlockReferencePropertyCollection;
-                                if (acBlockDynProp != null)
-                                {
-                                    foreach (Db.DynamicBlockReferenceProperty obj in acBlockDynProp)
-                                    {
-                                        if (!prop.DynProp.ContainsKey(obj.PropertyName))
-                                            prop.DynProp.Add(obj.PropertyName, obj.Value);
-                                        else
-                                            acEd.WriteMessage($"\nВ блоке {blr_nam} придутствуют динамические свойства с одинаковыми именами");
                                     }
-                                }
 
 
-                                propertyList.Add(prop);
+                                    propertyList.Add(prop);
 
-                            }   //Проверка, что объект это ссылка на блок
+                                }   //Проверка, что объект это ссылка на блок
+                            }
                         }
                     }
+                    acTrans.Commit();
+
                 }
-                acTrans.Commit();
-
             }
-
 
             //4. Формируем одну большую таблицу с данными
             //4.1 Считаем общее количество уникальны тегов атрибутов и уникальных названй динамических свойств
@@ -140,7 +148,7 @@ namespace dynIN_dynOUT
                     if(!unicAttName.Contains("a_" + i.Key)) unicAttName.Add("a_"+i.Key);
 
                 foreach (var i in s.DynProp)
-                    if (!unicDynName.Contains("d_" + i.Key)) unicDynName.Add("d_"+i.Key);
+                        if (!unicDynName.Contains("d_" + i.Key)) unicDynName.Add("d_"+i.Key);
             }
 
 
@@ -186,7 +194,7 @@ namespace dynIN_dynOUT
             //5. Выводим собранные данные в файл
             try
             {
-                using (StreamWriter sw = new StreamWriter(fileName, false, System.Text.Encoding.ASCII))
+                using (StreamWriter sw = new StreamWriter(fileName, false, System.Text.Encoding.GetEncoding(1251)))
                 {
                     foreach (var s in rowList)
                     {
