@@ -200,16 +200,6 @@ namespace dynIN_dynOUT
                             foreach (Db.DynamicBlockReferenceProperty obj in acBlockDynProp)
                             {
 
-                                //if (obj.PropertyName != "Origin")
-                                //{
-                                //    if (!prop.DynProp.ContainsKey(obj.PropertyName))
-
-                                //        prop.DynProp.Add(obj.PropertyName, obj.Value);
-                                //    else
-                                //        acEd.WriteMessage($"\nВ блоке {blr_nam} придутствуют динамические свойства с одинаковыми именами");
-                                //}
-
-
                                 foreach (var i in prop.DynProp)
                                 {
                                     if (obj.PropertyName == i.Key)
