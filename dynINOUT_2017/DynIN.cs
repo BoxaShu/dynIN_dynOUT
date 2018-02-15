@@ -99,7 +99,7 @@ namespace dynIN_dynOUT
 
                 l = fileLines[i].Split('\t').ToList();
 
-                prop.Handle = long.Parse(l[0]);
+                prop.Handle = long.Parse(l[0].Replace("\'",""));
 
                 //Нужно соотнести значение с названием параметра
                 for(int j =1; j < l.Count; j++)

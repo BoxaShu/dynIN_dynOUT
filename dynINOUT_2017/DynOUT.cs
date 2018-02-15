@@ -173,7 +173,7 @@ namespace dynIN_dynOUT
                     row [i]= "\t";
 
 
-                row[0] = s.Handle.ToString();
+                row[0] = $"\'{s.Handle.ToString()}";
 
                 foreach (var i in s.Attribut)
                 {
