@@ -207,7 +207,7 @@ namespace dynIN_dynOUT
                                         //Нужно проверить тип объекта
                                         if(obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Angular 
                                             || obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Distance 
-                                            || obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Distance)
+                                            || obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Area)
                                         {
                                             obj.Value = double.Parse(i.Value.ToString());
                                         }
