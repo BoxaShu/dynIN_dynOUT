@@ -113,6 +113,7 @@ namespace dynIN_dynOUT
                                     {
                                         foreach (Db.DynamicBlockReferenceProperty obj in acBlockDynProp)
                                         {
+                                            //TODO а вот тут вопрос, нужно ли выводить значения, которые только ReadOnly
                                             if (obj.PropertyName != "Origin")
                                             {
                                                 if (!prop.DynProp.ContainsKey(obj.PropertyName))

@@ -41,7 +41,7 @@ namespace dynIN_dynOUT
 
 
 
-            List<string> fileLines =  new List<string>();
+            List<string> fileLines = new List<string>();
             try
             {
                 //using (StreamReader sr = new StreamReader(fileName, System.Text.Encoding.Default))
@@ -75,11 +75,11 @@ namespace dynIN_dynOUT
             List<string> unicDynName = new List<string>();
 
             List<string> l = fileLines[0].Split('\t').ToList();
-            foreach(string s in l)
+            foreach (string s in l)
             {
                 if (s.Substring(0, 2) == "a_")
                 {
-                    unicAttName.Add(s.Substring(2, s.Length-2));
+                    unicAttName.Add(s.Substring(2, s.Length - 2));
                 }
                 if (s.Substring(0, 2) == "d_")
                 {
@@ -93,27 +93,27 @@ namespace dynIN_dynOUT
 
 
             //Парсим основное тело
-            for (int i = 1; i < fileLines.Count;  i++)
+            for (int i = 1; i < fileLines.Count; i++)
             {
                 Property prop = new Property();
 
                 l = fileLines[i].Split('\t').ToList();
 
-                prop.Handle = long.Parse(l[0].Replace("\'",""));
+                prop.Handle = long.Parse(l[0].Replace("\'", ""));
 
                 //Нужно соотнести значение с названием параметра
-                for(int j =1; j < l.Count; j++)
+                for (int j = 1; j < l.Count; j++)
                 {
                     if (l[j] != "")
                     {
                         //Если индекс ячейки со значением лежит в обрасти занчений атрибутов
                         // TODO заменить постоянный расчет диапазонов на простые переменные
-                        if (1 + j > 1 && 1+j < 1+ unicAttName.Count)
+                        if (1 + j > 1 && 1 + j < 1 + unicAttName.Count)
                         {
-                            prop.Attribut.Add(unicAttName[j-1], l[j]);
+                            prop.Attribut.Add(unicAttName[j - 1], l[j]);
                         }
 
-                        if (1 + j > 1+ unicAttName.Count )
+                        if (1 + j > 1 + unicAttName.Count)
                         {
                             int p = j - 1 - unicAttName.Count;
                             prop.DynProp.Add(unicDynName[p], l[j]);
@@ -177,16 +177,19 @@ namespace dynIN_dynOUT
                                 foreach (Db.ObjectId AttID in attrCol)
                                 {
                                     Db.AttributeReference acAttRef = acTrans.GetObject(AttID,
-                                                            Db.OpenMode.ForWrite) as Db.AttributeReference;
+                                                            Db.OpenMode.ForRead) as Db.AttributeReference;
 
                                     foreach (var i in prop.Attribut)
                                     {
-                                        if (acAttRef.Tag == i.Key)
+                                        //Обновляем только в том случае если были изменения
+                                        if (acAttRef.Tag == i.Key && acAttRef.TextString != i.Value)
                                         {
+                                            acAttRef.UpgradeOpen();
                                             acAttRef.TextString = i.Value;
+                                            acAttRef.DowngradeOpen();
                                             break;
                                         }
-                                        
+
                                     }
 
                                 }
@@ -202,19 +205,82 @@ namespace dynIN_dynOUT
 
                                 foreach (var i in prop.DynProp)
                                 {
-                                    if (obj.PropertyName == i.Key)
+                                    //Дополнительно проверяем можно ли вообще обновить значение
+                                    if (obj.PropertyName == i.Key && !obj.ReadOnly)
                                     {
                                         //Нужно проверить тип объекта
-                                        if(obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Angular 
-                                            || obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Distance 
+                                        if (obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Angular
+                                            || obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Distance
                                             || obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.Area)
                                         {
-                                            obj.Value = double.Parse(i.Value.ToString());
+                                            double d = double.Parse(i.Value.ToString());
+                                            //Обновляем только в том случае если были изменения
+                                            //Как то коряво
+                                            if (obj.Value != d as object)
+                                                obj.Value = d;
                                         }
+
+
 
                                         //http://adn-cis.org/forum/index.php?topic=603.msg2033#msg2033
                                         if (obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.NoUnits)
                                         {
+
+                                            object d = new object();
+
+                                            switch (obj.PropertyTypeCode)
+                                            {
+                                                case (short)DwgDataType.kDwgNull: //0
+                                                    break;                                  
+                                                case (short)DwgDataType.kDwgReal: //1
+                                                    d = Double.Parse(i.Value.ToString()) as object;
+                                                    break;                                                                                   //return true;
+                                                case (short)DwgDataType.kDwgInt32: //2
+                                                    d = Int32.Parse(i.Value.ToString()) as object;
+                                                    break;                                                                       //return true;
+                                                case (short)DwgDataType.kDwgInt16:  //3 
+                                                    //Flip state
+                                                    ////Block Properties Table
+                                                    d = short.Parse(i.Value.ToString()) as object;
+                                                    break;
+                                                case (short)DwgDataType.kDwgInt8: //4
+                                                    //Возможно так... Int8
+                                                    d = short.Parse(i.Value.ToString()) as object;
+                                                    break;
+                                                case (short)DwgDataType.kDwgText: //5  
+                                                    //Lookup
+                                                    d = i.Value.ToString() as object;
+                                                    break;
+                                                case (short)DwgDataType.kDwgBChunk: //6
+                                                    break;
+                                                case (short)DwgDataType.kDwgHandle: //7
+                                                    d = long.Parse(i.Value.ToString()) as object;
+                                                    break;
+                                                case (short)DwgDataType.kDwgHardOwnershipId: //8
+                                                    break;
+                                                case (short)DwgDataType.kDwgSoftOwnershipId: //9
+                                                    break;
+                                                case (short)DwgDataType.kDwgHardPointerId: //12 
+                                                    //Origin (double[2])
+                                                    break;
+                                                case (short)DwgDataType.kDwgSoftPointerId: //11
+                                                    break;
+                                                case (short)DwgDataType.kDwg3Real: //12
+                                                    break;
+                                                case (short)DwgDataType.kDwgInt64: //13
+                                                    d = Int64.Parse(i.Value.ToString()) as object;
+                                                    break;
+                
+                                                case (short)DwgDataType.kDwgNotRecognized: //19
+                                                    break;
+                                                default:
+                                                    throw new InvalidCastException("You can't cast a weird value!");
+                                            }
+
+                                            if (d != null && obj.Value != d )
+                                                obj.Value = d;
+
+
 
                                         }
 

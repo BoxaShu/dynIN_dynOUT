@@ -138,5 +138,31 @@ namespace dynIN_dynOUT
             //Сохраняем данные в txt файл
             DynOUT.OUT();
         }
+
+
+
+        [Rtm.CommandMethod("GetAllDynamicBlockParameters")]
+        public void GetAllDynamicBlockParameters()
+        {
+            App.Document doc = App.Application.DocumentManager.MdiActiveDocument;
+            Db.Database db = doc.Database;
+            Ed.Editor editor = doc.Editor;
+            var option = new Ed.PromptEntityOptions("\n" + "Select a block");
+            Ed.PromptEntityResult result = editor.GetEntity(option);
+            if (result.Status == Ed.PromptStatus.OK)
+            {
+                Db.ObjectId id = result.ObjectId;
+                using (Db.Transaction trans = db.TransactionManager.StartTransaction())
+                {
+                    var blockRef = (Db.BlockReference)trans.GetObject(id, Db.OpenMode.ForRead);
+                    Db.DynamicBlockReferencePropertyCollection properties = blockRef.DynamicBlockReferencePropertyCollection;
+                    for (int i = 0; i < properties.Count; i++)
+                    {
+                        Db.DynamicBlockReferenceProperty property = properties[i];
+                        editor.WriteMessage("\n" + property.PropertyName + " | " + property.PropertyTypeCode + " | " + property.Value);
+                    }
+                }
+            }
+        }
     }
 }
