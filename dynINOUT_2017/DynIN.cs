@@ -30,9 +30,9 @@ namespace dynIN_dynOUT
             Ed.Editor acEd = acDoc.Editor;
 
             //1. Читаем и парсим файл
-            OpenFileDialog openFileDialog = new OpenFileDialog("Выберите txt файл",
-                                          "*.txt",
-                                          "txt",
+            OpenFileDialog openFileDialog = new OpenFileDialog("Выберите CSV файл",
+                                          "*.csv",
+                                          "csv",
                                           "Выбор файла",
                                           OpenFileDialog.OpenFileDialogFlags.NoUrls);
 
@@ -62,7 +62,7 @@ namespace dynIN_dynOUT
             }
             catch (Exception e)
             {
-                acEd.WriteMessage($"\nОшибка чтения файла: {e.Message}");
+                acEd.WriteMessage($"\nDynIN.IN-Ошибка чтения файла: {e.Message}");
                 return;
             }
 
@@ -74,7 +74,7 @@ namespace dynIN_dynOUT
             List<string> unicAttName = new List<string>();
             List<string> unicDynName = new List<string>();
 
-            List<string> l = fileLines[0].Split('\t').ToList();
+            List<string> l = fileLines[0].Split(';').ToList();
             foreach (string s in l)
             {
                 if (s.Length > 2)
@@ -100,7 +100,7 @@ namespace dynIN_dynOUT
             {
                 Property prop = new Property();
 
-                l = fileLines[i].Split('\t').ToList();
+                l = fileLines[i].Split(';').ToList();
 
                 prop.Handle = long.Parse(l[0].Replace("\'", ""));
 
@@ -111,7 +111,7 @@ namespace dynIN_dynOUT
                     {
                         //Если индекс ячейки со значением лежит в обрасти занчений атрибутов
                         // TODO заменить постоянный расчет диапазонов на простые переменные
-                        if (1 + j > 1 && 1 + j < 1 + unicAttName.Count)
+                        if (1 + j > 0 && 1 + j <= 1 + unicAttName.Count)
                         {
                             prop.Attribut.Add(unicAttName[j - 1], l[j]);
                         }
@@ -119,7 +119,16 @@ namespace dynIN_dynOUT
                         if (1 + j > 1 + unicAttName.Count)
                         {
                             int p = j - 1 - unicAttName.Count;
-                            prop.DynProp.Add(unicDynName[p], l[j]);
+                            try
+                            {
+                                prop.DynProp.Add(unicDynName[p], l[j]);
+                            }
+                            catch (ArgumentOutOfRangeException e)
+                            {
+                                acEd.WriteMessage($"\nj={j}; unicDynName[p]={unicDynName[p]}; l[j]={l[j]} ");
+                                acEd.WriteMessage($"\n{e.Message}");
+                            }
+
                         }
 
                     }
@@ -154,7 +163,7 @@ namespace dynIN_dynOUT
                         catch (Exception e)
                         {
 
-                            acEd.WriteMessage($"\nОшибка поиска объекта: {e.Message}");
+                            acEd.WriteMessage($"\nDynIN.IN-Ошибка поиска объекта: {e.Message}");
                             //return;
                         }
 
@@ -231,7 +240,7 @@ namespace dynIN_dynOUT
                                         if (obj.UnitsType == Db.DynamicBlockReferencePropertyUnitsType.NoUnits)
                                         {
 
-                                            object d = new object();
+                                            object d = null;// = new object();
 
                                             switch (obj.PropertyTypeCode)
                                             {
@@ -244,10 +253,12 @@ namespace dynIN_dynOUT
                                                     d = Int32.Parse(i.Value.ToString()) as object;
                                                     break;                                                                       //return true;
                                                 case (short)DwgDataType.kDwgInt16:  //3 
-                                                    //Flip state
-                                                    //Block Properties Table
+                                                                                    //Flip state
+                                                                                    //Block Properties Table
 
-                                                    d = short.Parse(i.Value.ToString()) as object;
+                                                    var j = short.Parse(i.Value.ToString());
+                                                    if (j > 0) d = j as object;
+
                                                     break;
                                                 case (short)DwgDataType.kDwgInt8: //4
                                                     //Возможно так... Int8
@@ -283,8 +294,11 @@ namespace dynIN_dynOUT
                                                     throw new InvalidCastException("You can't cast a weird value!");
                                             }
 
-                                            if (d != null && obj.Value != d)
+                                            if (d != null && obj.Value != d && !obj.ReadOnly)
+                                            {
                                                 obj.Value = d;
+                                            }
+
 
 
 

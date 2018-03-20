@@ -24,9 +24,9 @@ namespace dynIN_dynOUT
         {
             //1. Подражая Attout сначала выбираем файл в который будет сохраняться информация
             // TODO по умолчанию имя нового файла должно соответствовать имени чертежа
-            SaveFileDialog openFileDialog = new SaveFileDialog("Выберите txt файл",
-                                                      "*.txt",
-                                                      "txt",
+            SaveFileDialog openFileDialog = new SaveFileDialog("Выберите CSV файл",
+                                                      "*.csv",
+                                                      "csv",
                                                       "Выбор файла",
                                                       SaveFileDialog.SaveFileDialogFlags.NoUrls);
 
@@ -167,14 +167,19 @@ namespace dynIN_dynOUT
             int colCount = rowHead.Count;
 
 
+
+
             foreach (var s in propertyList)
             {
+                //Создаем массив длинной , равной длинне заголовка
                 string[] row = new string[colCount];
+                //Все ячейки массива заполняем по умолчанию табуляциями
                 for(int i =0; i< row.Length; i++)
-                    row [i]= "\t";
+                    row [i]= "";
 
-
+                //В первую ячейку массива пишу хендл объекта
                 row[0] = $"\'{s.Handle.ToString()}";
+
 
                 foreach (var i in s.Attribut)
                 {
@@ -182,12 +187,14 @@ namespace dynIN_dynOUT
                     row[1 + indxUnicAttName] = i.Value;
                 }
 
+
                 foreach (var i in s.DynProp)
                 {
                     int indxUnicDynName = unicDynName.FindIndex(x => x == "d_" + i.Key);
                     row[1 + unicAttName.Count+ indxUnicDynName] = i.Value.ToString() ;
                 }
 
+                //Добавляю 
                 rowList.Add(row);
             }
 
@@ -199,7 +206,7 @@ namespace dynIN_dynOUT
                 {
                     foreach (var s in rowList)
                     {
-                        sw.WriteLine(String.Join("\t",s));
+                        sw.WriteLine(String.Join(";",s));
                     }
                 }
 
