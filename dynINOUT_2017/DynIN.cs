@@ -77,13 +77,16 @@ namespace dynIN_dynOUT
             List<string> l = fileLines[0].Split('\t').ToList();
             foreach (string s in l)
             {
-                if (s.Substring(0, 2) == "a_")
+                if (s.Length > 2)
                 {
-                    unicAttName.Add(s.Substring(2, s.Length - 2));
-                }
-                if (s.Substring(0, 2) == "d_")
-                {
-                    unicDynName.Add(s.Substring(2, s.Length - 2));
+                    if (s.Substring(0, 2) == "a_")
+                    {
+                        unicAttName.Add(s.Substring(2, s.Length - 2));
+                    }
+                    if (s.Substring(0, 2) == "d_")
+                    {
+                        unicDynName.Add(s.Substring(2, s.Length - 2));
+                    }
                 }
             }
 
@@ -220,6 +223,8 @@ namespace dynIN_dynOUT
                                                 obj.Value = d;
                                         }
 
+                                        //http://adn-cis.org/chtenie-tabliczyi-svojstv-bloka-dlya-dinamicheskogo-bloka.html
+                                        //Тут можно посмотреть наименование свойств в таблице
 
 
                                         //http://adn-cis.org/forum/index.php?topic=603.msg2033#msg2033
@@ -231,7 +236,7 @@ namespace dynIN_dynOUT
                                             switch (obj.PropertyTypeCode)
                                             {
                                                 case (short)DwgDataType.kDwgNull: //0
-                                                    break;                                  
+                                                    break;
                                                 case (short)DwgDataType.kDwgReal: //1
                                                     d = Double.Parse(i.Value.ToString()) as object;
                                                     break;                                                                                   //return true;
@@ -240,7 +245,8 @@ namespace dynIN_dynOUT
                                                     break;                                                                       //return true;
                                                 case (short)DwgDataType.kDwgInt16:  //3 
                                                     //Flip state
-                                                    ////Block Properties Table
+                                                    //Block Properties Table
+
                                                     d = short.Parse(i.Value.ToString()) as object;
                                                     break;
                                                 case (short)DwgDataType.kDwgInt8: //4
@@ -270,14 +276,14 @@ namespace dynIN_dynOUT
                                                 case (short)DwgDataType.kDwgInt64: //13
                                                     d = Int64.Parse(i.Value.ToString()) as object;
                                                     break;
-                
+
                                                 case (short)DwgDataType.kDwgNotRecognized: //19
                                                     break;
                                                 default:
                                                     throw new InvalidCastException("You can't cast a weird value!");
                                             }
 
-                                            if (d != null && obj.Value != d )
+                                            if (d != null && obj.Value != d)
                                                 obj.Value = d;
 
 
