@@ -1,0 +1,34 @@
+﻿<Window x:Class="dynINOUT_UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:dynINOUT_UI"
+        mc:Ignorable="d"
+        Title="dynINOUT" Height="350" Width="525">
+
+    <Grid>
+        <ListBox x:Name="lbMain" Margin="5,5,5,35" MinHeight="200" 
+                ItemsSource="{Binding BindingList, RelativeSource={RelativeSource AncestorType=Window}}"      >
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Name="value" Width="30"/>
+                            <ColumnDefinition Name="key" MinWidth="200" Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition  MinHeight="30"/>
+                        </Grid.RowDefinitions>
+                        <CheckBox IsChecked="{Binding Value}" Grid.Column="0" />
+                        <TextBlock Text="{Binding Key, Mode=OneWay}" Grid.Column="1" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Button Content="Apply and exit" 
+                Click="Button_Click_1" Margin="5,0,5,5" Height="25" 
+                VerticalAlignment="Bottom"/>
+    </Grid>
+</Window>
