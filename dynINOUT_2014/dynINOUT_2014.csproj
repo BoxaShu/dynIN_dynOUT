@@ -67,6 +67,7 @@
     <Compile Include="..\dynINOUT_2017\Property.cs">
       <Link>Property.cs</Link>
     </Compile>
+    <Compile Include="BlockReferenceExtensionMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

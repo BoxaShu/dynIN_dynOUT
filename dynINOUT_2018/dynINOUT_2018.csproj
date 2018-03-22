@@ -55,6 +55,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\dynINOUT_2017\BlockReferenceExtensionMethods.cs">
+      <Link>BlockReferenceExtensionMethods.cs</Link>
+    </Compile>
     <Compile Include="..\dynINOUT_2017\Commands.cs">
       <Link>Commands.cs</Link>
     </Compile>

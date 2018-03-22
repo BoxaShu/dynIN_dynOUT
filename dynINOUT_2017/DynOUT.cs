@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Autodesk.AutoCAD.Windows;
+
 using App = Autodesk.AutoCAD.ApplicationServices;
 using cad = Autodesk.AutoCAD.ApplicationServices.Application;
 using Db = Autodesk.AutoCAD.DatabaseServices;
@@ -19,9 +21,13 @@ namespace dynIN_dynOUT
     /// </summary>
     internal static class DynOUT
     {
+        //Публичная переменная в которой храниться список имен блоков
+        internal static ObservableCollection<string> _blockNameList = new ObservableCollection<string>();
 
         internal static void OUT()
         {
+
+
             //1. Подражая Attout сначала выбираем файл в который будет сохраняться информация
             // TODO по умолчанию имя нового файла должно соответствовать имени чертежа
             SaveFileDialog openFileDialog = new SaveFileDialog("Выберите CSV файл",
@@ -55,6 +61,32 @@ namespace dynIN_dynOUT
             if (psr.Status != Ed.PromptStatus.OK) return;
 
 
+
+
+            //Сюда нужно встроить фильтрацию по имени блока
+            _blockNameList.Clear(); // чистим хранилище имен блоков
+            using (App.DocumentLock docloc = acDoc.LockDocument())
+            {
+                foreach (Ed.SelectedObject acSSObj in psr.Value)
+                {
+                    if (!acSSObj.ObjectId.IsNull && acSSObj.ObjectId.IsResident && acSSObj.ObjectId.IsValid && !acSSObj.ObjectId.IsErased)
+                        if (acSSObj.ObjectId.ObjectClass.IsDerivedFrom(Rtm.RXObject.GetClass(typeof(Db.BlockReference))))
+                        {
+                            string blockName = "";
+                            using (Db.BlockReference acBlRef = acSSObj.ObjectId.Open(Db.OpenMode.ForRead) as Db.BlockReference)
+                            {
+                                //TODO По хорошему этот кусок кода надо бы вынести в экстеншен метод класса BlockReference
+                                blockName = acBlRef.EffectiveName();
+                                acBlRef.Close();
+                            }
+                            if (!_blockNameList.Contains(blockName)) _blockNameList.Add(blockName);
+                        }
+                }
+            }
+
+            //Тут показываем пользователю окошко с выбором блоков по именам
+
+
             //3. Проходимся по выбранным блокам и собираем информацию
             List<Property> propertyList = new List<Property>();
 
@@ -76,59 +108,58 @@ namespace dynIN_dynOUT
                             {
                                 if (acEnt is Db.BlockReference)
                                 {
-                                    Property prop = new Property();
-
-
                                     Db.BlockReference acBlRef = (Db.BlockReference)acEnt;
                                     Db.BlockTableRecord blr = (Db.BlockTableRecord)acTrans.GetObject(acBlRef.DynamicBlockTableRecord,
                                                                                                     Db.OpenMode.ForRead);
-                                    Db.BlockTableRecord blr_nam = (Db.BlockTableRecord)acTrans.GetObject(blr.ObjectId,
-                                                                                                Db.OpenMode.ForRead);
 
-                                    prop.Handle = acEnt.Handle.Value;
-
-                                    if (blr.HasAttributeDefinitions)
+                                    //Фильтр по именам блоков
+                                    if (_blockNameList.Contains(acBlRef.EffectiveName()))
                                     {
-                                        Db.AttributeCollection attrCol = acBlRef.AttributeCollection;
-                                        if (attrCol.Count > 0)
-                                        {
-                                            foreach (Db.ObjectId AttID in attrCol)
-                                            {
-                                                Db.AttributeReference acAttRef = acTrans.GetObject(AttID,
-                                                                        Db.OpenMode.ForRead) as Db.AttributeReference;
+                                        Property prop = new Property();
+                                        prop.Handle = acEnt.Handle.Value;
 
-                                                //TODO Необходимо проверить и учесть наличие полей
-                                                if (!prop.Attribut.ContainsKey(acAttRef.Tag))
-                                                    prop.Attribut.Add(acAttRef.Tag, acAttRef.TextString);
-                                                else
-                                                    acEd.WriteMessage($"\nВ блоке {blr_nam} придутствуют атрибуты с одинаковыми тегами");
+                                        if (blr.HasAttributeDefinitions)
+                                        {
+                                            Db.AttributeCollection attrCol = acBlRef.AttributeCollection;
+                                            if (attrCol.Count > 0)
+                                            {
+                                                foreach (Db.ObjectId AttID in attrCol)
+                                                {
+                                                    Db.AttributeReference acAttRef = acTrans.GetObject(AttID,
+                                                                            Db.OpenMode.ForRead) as Db.AttributeReference;
+
+                                                    //TODO Необходимо проверить и учесть наличие полей
+                                                    if (!prop.Attribut.ContainsKey(acAttRef.Tag))
+                                                        prop.Attribut.Add(acAttRef.Tag, acAttRef.TextString);
+                                                    else
+                                                        acEd.WriteMessage($"\nВ блоке {blr.Name}->{acBlRef.Name} придутствуют атрибуты с одинаковыми тегами");
+
+                                                }
+                                            }   //Проверка что кол аттрибутов больше 0
+                                        }  //Проверка наличия атрибутов
+
+
+                                        Db.DynamicBlockReferencePropertyCollection acBlockDynProp = acBlRef.DynamicBlockReferencePropertyCollection;
+                                        if (acBlockDynProp != null)
+                                        {
+                                            foreach (Db.DynamicBlockReferenceProperty obj in acBlockDynProp)
+                                            {
+                                                //TODO а вот тут вопрос, нужно ли выводить значения, которые только ReadOnly
+                                                if (obj.PropertyName != "Origin")
+                                                {
+                                                    if (!prop.DynProp.ContainsKey(obj.PropertyName))
+
+                                                        prop.DynProp.Add(obj.PropertyName, obj.Value);
+                                                    else
+                                                        acEd.WriteMessage($"\nВ блоке {blr.Name}->{acBlRef.Name} придутствуют динамические свойства с одинаковыми именами");
+                                                }
 
                                             }
-                                        }   //Проверка что кол аттрибутов больше 0
-                                    }  //Проверка наличия атрибутов
-
-
-                                    Db.DynamicBlockReferencePropertyCollection acBlockDynProp = acBlRef.DynamicBlockReferencePropertyCollection;
-                                    if (acBlockDynProp != null)
-                                    {
-                                        foreach (Db.DynamicBlockReferenceProperty obj in acBlockDynProp)
-                                        {
-                                            //TODO а вот тут вопрос, нужно ли выводить значения, которые только ReadOnly
-                                            if (obj.PropertyName != "Origin")
-                                            {
-                                                if (!prop.DynProp.ContainsKey(obj.PropertyName))
-
-                                                    prop.DynProp.Add(obj.PropertyName, obj.Value);
-                                                else
-                                                    acEd.WriteMessage($"\nВ блоке {blr_nam} придутствуют динамические свойства с одинаковыми именами");
-                                            }
-
                                         }
+
+
+                                        propertyList.Add(prop);
                                     }
-
-
-                                    propertyList.Add(prop);
-
                                 }   //Проверка, что объект это ссылка на блок
                             }
                         }
@@ -146,17 +177,17 @@ namespace dynIN_dynOUT
             foreach (var s in propertyList)
             {
                 foreach (var i in s.Attribut)
-                    if(!unicAttName.Contains("a_" + i.Key)) unicAttName.Add("a_"+i.Key);
+                    if (!unicAttName.Contains("a_" + i.Key)) unicAttName.Add("a_" + i.Key);
 
                 foreach (var i in s.DynProp)
-                        if (!unicDynName.Contains("d_" + i.Key)) unicDynName.Add("d_"+i.Key);
+                    if (!unicDynName.Contains("d_" + i.Key)) unicDynName.Add("d_" + i.Key);
             }
 
 
             //4.2 Заполняем массив
             List<string[]> rowList = new List<string[]>();
 
-            List <string>rowHead = new List<string>();
+            List<string> rowHead = new List<string>();
             rowHead.Add("Handle");
             rowHead.AddRange(unicAttName);
             rowHead.AddRange(unicDynName);
@@ -174,8 +205,8 @@ namespace dynIN_dynOUT
                 //Создаем массив длинной , равной длинне заголовка
                 string[] row = new string[colCount];
                 //Все ячейки массива заполняем по умолчанию табуляциями
-                for(int i =0; i< row.Length; i++)
-                    row [i]= "";
+                for (int i = 0; i < row.Length; i++)
+                    row[i] = "";
 
                 //В первую ячейку массива пишу хендл объекта
                 row[0] = $"\'{s.Handle.ToString()}";
@@ -191,7 +222,7 @@ namespace dynIN_dynOUT
                 foreach (var i in s.DynProp)
                 {
                     int indxUnicDynName = unicDynName.FindIndex(x => x == "d_" + i.Key);
-                    row[1 + unicAttName.Count+ indxUnicDynName] = i.Value.ToString() ;
+                    row[1 + unicAttName.Count + indxUnicDynName] = i.Value.ToString();
                 }
 
                 //Добавляю 
@@ -206,7 +237,7 @@ namespace dynIN_dynOUT
                 {
                     foreach (var s in rowList)
                     {
-                        sw.WriteLine(String.Join(";",s));
+                        sw.WriteLine(String.Join(";", s));
                     }
                 }
 
@@ -218,7 +249,7 @@ namespace dynIN_dynOUT
             }
             catch (Exception e)
             {
-                Console.WriteLine($"\nОшибка записи в файл: {e.Message}");
+                Console.WriteLine($"\nDynOUT.Out-Ошибка записи в файл: {e.Message}");
             }
 
 

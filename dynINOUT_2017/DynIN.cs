@@ -256,6 +256,9 @@ namespace dynIN_dynOUT
                                                                                     //Flip state
                                                                                     //Block Properties Table
 
+                                                    //Отрицательное значение - вроде как выставленное по умолчанию...
+                                                    // и отрицательное значение не присвоить Block Properties Table
+                                                    //TODO , а как с Flip state еще не тестировал.
                                                     var j = short.Parse(i.Value.ToString());
                                                     if (j > 0) d = j as object;
 
