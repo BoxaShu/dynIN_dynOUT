@@ -14,20 +14,21 @@
                 <DataTemplate>
                     <Grid >
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Name="value" Width="30"/>
-                            <ColumnDefinition Name="key" MinWidth="200" Width="*"/>
+                            <ColumnDefinition Name="value" Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition  MinHeight="30"/>
                         </Grid.RowDefinitions>
-                        <CheckBox IsChecked="{Binding Value}" Grid.Column="0" />
-                        <TextBlock Text="{Binding Key, Mode=OneWay}" Grid.Column="1" />
+                        <CheckBox IsChecked="{Binding Value}" Grid.Column="0" 
+                                  Margin="5,5,5,5" VerticalContentAlignment="Center" 
+                                  Content="{Binding Key, Mode=OneWay}"/>
+
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <Button Content="Apply and exit" 
+        <Button Content="Apply and Exit" 
                 Click="Button_Click_1" Margin="5,0,5,5" Height="25" 
                 VerticalAlignment="Bottom"/>
     </Grid>
