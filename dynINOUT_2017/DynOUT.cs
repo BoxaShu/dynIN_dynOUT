@@ -87,15 +87,17 @@ namespace dynIN_dynOUT
             }
 
             //Тут показываем пользователю окошко с выбором блоков по именам
-            var dlg = new  MainWindow();
-            dlg.AddBlockNameList(_blockNameList);
-            cad.ShowModalWindow(dlg);
+            if (_blockNameList.Count > 1)
+            {
+                var dlg = new MainWindow();
+                dlg.AddBlockNameList(_blockNameList);
+                cad.ShowModalWindow(dlg);
 
-            _blockNameList.Clear();
+                _blockNameList.Clear();
 
-            foreach (var i in dlg.BindingList)
-                if (i.Value) _blockNameList.Add(i.Key);
-
+                foreach (var i in dlg.BindingList)
+                    if (i.Value) _blockNameList.Add(i.Key);
+            }
 
             //3. Проходимся по выбранным блокам и собираем информацию
             List<Property> propertyList = new List<Property>();
