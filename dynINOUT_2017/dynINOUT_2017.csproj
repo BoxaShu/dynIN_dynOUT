@@ -75,7 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\dynINOUT_UI\dynINOUT_UI.csproj">
-      <Project>{aa8db68c-7c11-44e0-b110-a2fae6c6987e}</Project>
+      <Project>{8d1bef8a-7f55-4788-b3e2-fd07f638a774}</Project>
       <Name>dynINOUT_UI</Name>
     </ProjectReference>
   </ItemGroup>
