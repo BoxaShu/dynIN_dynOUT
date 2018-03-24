@@ -140,7 +140,14 @@ namespace dynIN_dynOUT
         }
 
 
+        [Rtm.CommandMethod("dynSET")]
+        static public void dynSET()
+        {
+            //Тут должно вызываться окно настроек программы
+        }
 
+
+#if(DEBUG)
         [Rtm.CommandMethod("GetAllDynamicBlockParameters")]
         public void GetAllDynamicBlockParameters()
         {
@@ -164,5 +171,8 @@ namespace dynIN_dynOUT
                 }
             }
         }
+#endif
+
+
     }
 }

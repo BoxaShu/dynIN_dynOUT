@@ -168,8 +168,6 @@ namespace dynIN_dynOUT
 
                                             }
                                         }
-
-
                                         propertyList.Add(prop);
                                     }
                                 }   //Проверка, что объект это ссылка на блок
@@ -193,6 +191,7 @@ namespace dynIN_dynOUT
 
                 foreach (var i in s.DynProp)
                     if (!unicDynName.Contains("d_" + i.Key)) unicDynName.Add("d_" + i.Key);
+
             }
 
 
@@ -203,8 +202,6 @@ namespace dynIN_dynOUT
             rowHead.Add("Handle");
             rowHead.AddRange(unicAttName);
             rowHead.AddRange(unicDynName);
-
-
             rowList.Add(rowHead.ToArray());
 
             int colCount = rowHead.Count;
@@ -236,6 +233,7 @@ namespace dynIN_dynOUT
                     int indxUnicDynName = unicDynName.FindIndex(x => x == "d_" + i.Key);
                     row[1 + unicAttName.Count + indxUnicDynName] = i.Value.ToString();
                 }
+
 
                 //Добавляю 
                 rowList.Add(row);

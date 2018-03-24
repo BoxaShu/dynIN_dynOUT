@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Gem = Autodesk.AutoCAD.Geometry;
+
 namespace dynIN_dynOUT
 {
 
@@ -26,12 +28,17 @@ namespace dynIN_dynOUT
         kDwgNotRecognized = 19
     };
 
-
     class Property
     {
         public long Handle { get; set; }
         public Dictionary<string, string> Attribut { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, object> DynProp { get; set; } = new Dictionary<string, object>();
+
+        public string Layer { get; set; }
+        public int ColorIndex { get; set; }
+        public Gem.Scale3d Scale { get; set; }
+        public Gem.Point3d Position { get; set; }
+        public double Rotation { get; set; }
     }
 
     public static class StringExtensions

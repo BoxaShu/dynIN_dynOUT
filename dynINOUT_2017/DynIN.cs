@@ -73,6 +73,8 @@ namespace dynIN_dynOUT
             //Парсим первую строку
             List<string> unicAttName = new List<string>();
             List<string> unicDynName = new List<string>();
+            List<string> unicPropName = new List<string>();
+
 
             List<string> l = fileLines[0].Split(';').ToList();
             foreach (string s in l)
@@ -87,13 +89,13 @@ namespace dynIN_dynOUT
                     {
                         unicDynName.Add(s.Substring(2, s.Length - 2));
                     }
+                    if (s.Substring(0, 2) == "p_")
+                    {
+                        unicDynName.Add(s.Substring(2, s.Length - 2));
+                    }
+
                 }
             }
-
-
-
-
-
 
             //Парсим основное тело
             for (int i = 1; i < fileLines.Count; i++)
@@ -115,6 +117,7 @@ namespace dynIN_dynOUT
                         {
                             prop.Attribut.Add(unicAttName[j - 1], l[j]);
                         }
+
 
                         if (1 + j > 1 + unicAttName.Count)
                         {
@@ -177,10 +180,8 @@ namespace dynIN_dynOUT
                         Db.BlockReference acBlRef = acTrans.GetObject(id, Db.OpenMode.ForWrite) as Db.BlockReference;
                         Db.BlockTableRecord blr = (Db.BlockTableRecord)acTrans.GetObject(acBlRef.DynamicBlockTableRecord,
                                                                     Db.OpenMode.ForRead);
-                        Db.BlockTableRecord blr_nam = (Db.BlockTableRecord)acTrans.GetObject(blr.ObjectId,
-                                                                                    Db.OpenMode.ForRead);
 
-
+                        //Тут назначаем атрибуты блока
                         if (blr.HasAttributeDefinitions)
                         {
                             Db.AttributeCollection attrCol = acBlRef.AttributeCollection;
@@ -209,6 +210,8 @@ namespace dynIN_dynOUT
                         }  //Проверка наличия атрибутов
 
 
+
+                        //Тут назначаем динамические свойства блока
                         Db.DynamicBlockReferencePropertyCollection acBlockDynProp = acBlRef.DynamicBlockReferencePropertyCollection;
                         if (acBlockDynProp != null)
                         {
@@ -314,8 +317,11 @@ namespace dynIN_dynOUT
 
                             }
                         }
-                    }
 
+                        //Тут назначаем свойства самого блока
+
+
+                    }
                     acTrans.Commit();
                 }
             }
