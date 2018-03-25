@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Reflection;
+
 using Autodesk.AutoCAD.Windows;
 using App = Autodesk.AutoCAD.ApplicationServices;
 using cad = Autodesk.AutoCAD.ApplicationServices.Application;
@@ -69,72 +71,15 @@ namespace dynIN_dynOUT
 
 
             List<Property> propertyList = new List<Property>();
-
             //Парсим первую строку
-            List<string> unicAttName = new List<string>();
-            List<string> unicDynName = new List<string>();
-
-            List<string> l = fileLines[0].Split(';').ToList();
-            foreach (string s in l)
-            {
-                if (s.Length > 2)
-                {
-                    if (s.Substring(0, 2) == "a_")
-                    {
-                        unicAttName.Add(s.Substring(2, s.Length - 2));
-                    }
-                    if (s.Substring(0, 2) == "d_")
-                    {
-                        unicDynName.Add(s.Substring(2, s.Length - 2));
-                    }
-                }
-            }
-
-
-
-
-
-
+            List<string> rowHead = fileLines[0].Split(';').ToList();
             //Парсим основное тело
             for (int i = 1; i < fileLines.Count; i++)
             {
                 Property prop = new Property();
-
-                l = fileLines[i].Split(';').ToList();
-
-                prop.Handle = long.Parse(l[0].Replace("\'", ""));
-
-                //Нужно соотнести значение с названием параметра
-                for (int j = 1; j < l.Count; j++)
-                {
-                    if (l[j] != "")
-                    {
-                        //Если индекс ячейки со значением лежит в обрасти занчений атрибутов
-                        // TODO заменить постоянный расчет диапазонов на простые переменные
-                        if (1 + j > 0 && 1 + j <= 1 + unicAttName.Count)
-                        {
-                            prop.Attribut.Add(unicAttName[j - 1], l[j]);
-                        }
-
-                        if (1 + j > 1 + unicAttName.Count)
-                        {
-                            int p = j - 1 - unicAttName.Count;
-                            try
-                            {
-                                prop.DynProp.Add(unicDynName[p], l[j]);
-                            }
-                            catch (ArgumentOutOfRangeException e)
-                            {
-                                acEd.WriteMessage($"\nj={j}; unicDynName[p]={unicDynName[p]}; l[j]={l[j]} ");
-                                acEd.WriteMessage($"\n{e.Message}");
-                            }
-
-                        }
-
-                    }
-                }
-
-                propertyList.Add(prop);
+                //bool t = prop.Sets(rowHead, fileLines[i]);
+                if (prop.Sets(rowHead, fileLines[i]))
+                    propertyList.Add(prop);
             }
 
 
@@ -156,7 +101,9 @@ namespace dynIN_dynOUT
                         Db.ObjectId id = Db.ObjectId.Null;
                         try
                         {
-                            Db.Handle h = new Db.Handle(prop.Handle);
+
+                            //TODO Масло маслянное
+                            Db.Handle h = new Db.Handle(prop.Handle.Value);
                             id = acCurDb.GetObjectId(false, h, 0);
 
                         }
@@ -177,8 +124,32 @@ namespace dynIN_dynOUT
                         Db.BlockReference acBlRef = acTrans.GetObject(id, Db.OpenMode.ForWrite) as Db.BlockReference;
                         Db.BlockTableRecord blr = (Db.BlockTableRecord)acTrans.GetObject(acBlRef.DynamicBlockTableRecord,
                                                                     Db.OpenMode.ForRead);
-                        Db.BlockTableRecord blr_nam = (Db.BlockTableRecord)acTrans.GetObject(blr.ObjectId,
-                                                                                    Db.OpenMode.ForRead);
+
+
+                        PropertyInfo[] propsBlockRef = acBlRef.GetType().GetProperties();
+                        PropertyInfo[] propElement = prop.GetType().GetProperties();
+
+                        foreach (PropertyInfo propInfo in propElement)
+                        {
+                            try
+                            {
+                                //System.Reflection.PropertyInfo propBlock = propsBlockRef.Where(x => x.Name == propInfo.Name).FirstOrDefault();
+                                //if (propBlock != null) propInfo.SetValue(prop, propBlock.GetValue(acBlRef, null));
+
+                                PropertyInfo propBlock = propsBlockRef.Where(x => x.Name == propInfo.Name).FirstOrDefault();
+
+                                object oo = propInfo.GetValue(prop, null);
+                                if (propBlock != null)
+                                {
+                                    propBlock.SetValue(acBlRef, propInfo.GetValue(prop, null));
+                                }
+
+                            }
+                            catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                            {
+
+                            }
+                        }
 
 
                         if (blr.HasAttributeDefinitions)
@@ -198,6 +169,7 @@ namespace dynIN_dynOUT
                                         {
                                             acAttRef.UpgradeOpen();
                                             acAttRef.TextString = i.Value;
+                                            //acAttRef.RecordGraphicsModified(true);
                                             acAttRef.DowngradeOpen();
                                             break;
                                         }
@@ -314,6 +286,11 @@ namespace dynIN_dynOUT
 
                             }
                         }
+
+                        //обновляем атрибуты
+                        blr.AttSync(true, false, false);
+                        //маркеруем блок, как блок с измененный графикой
+                        acBlRef.RecordGraphicsModified(true);
                     }
 
                     acTrans.Commit();
@@ -322,7 +299,11 @@ namespace dynIN_dynOUT
 
 
             //5. Оповещаем пользователя о завершении работы
-            acEd.WriteMessage($"\nЭкспорт завершен.");
+            //Перерисовать графику
+            //http://adn-cis.org/forum/index.php?topic=8361.0
+            acDoc.TransactionManager.FlushGraphics();
+
+            acEd.WriteMessage($"\nDone.");
         }
 
 
