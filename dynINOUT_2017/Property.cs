@@ -33,16 +33,19 @@ namespace dynIN_dynOUT
 
     public class Property
     {
+        //Field
         public Db.Handle Handle;
         public Dictionary<string, string> Attribut = new Dictionary<string, string>();
         public Dictionary<string, object> DynProp = new Dictionary<string, object>();
+        public string BlockName = "";
 
+        //Property
         public Gem.Point3d Position { get; set; }
         public double Rotation { get; set; }
         public Gem.Scale3d ScaleFactors { get; set; }
-
         public string Layer { get; set; }
         public int ColorIndex { get; set; }
+
 
         public Property()
         {
@@ -58,7 +61,22 @@ namespace dynIN_dynOUT
         {
             var l = strLines.Split(';').ToList();
 
-            this.Handle = new Db.Handle(long.Parse(l[0].Replace("\'", "")));
+            //Попробуем спарсить хендл , если не получится, то запишем эту строку как имя блока
+            long h=0;
+            bool tryConvertToLong = long.TryParse(l[0].Replace("\'", ""), out h);
+            if (tryConvertToLong)
+            {
+                this.Handle = new Db.Handle(h);
+            }
+            else
+            {
+                this.BlockName = l[0].Replace("\'", "");
+                this.Handle = new Db.Handle();
+            }
+
+            
+
+
 
             for (int j = 1; j < l.Count; j++)
             {
@@ -83,7 +101,19 @@ namespace dynIN_dynOUT
 
 
                         if (name == "Layer")
-                            this.Layer = l[j];
+                        {
+                            //Проверяем, есть ли такой слой, если нет и создание слоев запрещено, то пишем "0"
+                            if (!AddEntity.CreateLayer(l[j], false) && !Setting.CreateLayer)
+                            {
+                                this.Layer = "0";
+                            }
+                            else
+                            {
+                                this.Layer = l[j];
+                            }
+                                
+                        }
+                            
 
 
                         if (name == "ColorIndex")

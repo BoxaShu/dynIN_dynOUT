@@ -46,20 +46,6 @@ namespace dynIN_dynOUT
             List<string> fileLines = new List<string>();
             try
             {
-                //using (StreamReader sr = new StreamReader(fileName, System.Text.Encoding.Default))
-                //{
-                //   fileLines = sr.ReadToEnd().Split('\n').ToList();
-                //}
-
-                //using (StreamWriter sw = new StreamWriter(fileName, false, System.Text.Encoding.GetEncoding(1251)))
-                //{
-                //    foreach (var s in rowList)
-                //    {
-                //        sw.WriteLine(String.Join("\t", s));
-                //    }
-                //}
-
-
                 fileLines = System.IO.File.ReadAllLines(fileName, System.Text.Encoding.GetEncoding(1251)).ToList();
             }
             catch (Exception e)
@@ -91,31 +77,40 @@ namespace dynIN_dynOUT
             using (App.DocumentLock docloc = acDoc.LockDocument())
             {
 
+                //Прежде всего пройдемся по всем объектам 
+                //и посмотрим все ли слои есть в базе
+                foreach (var i in propertyList)
+                    AddEntity.CreateLayer(i.Layer, Setting.CreateLayer);
+
 
                 // старт транзакции
-                using (Db.Transaction acTrans = acCurDb.TransactionManager.StartOpenCloseTransaction())
+                using (Db.Transaction acTrans = acCurDb.TransactionManager.StartTransaction())
                 {
 
                     foreach (var prop in propertyList)
                     {
                         Db.ObjectId id = Db.ObjectId.Null;
-                        try
+                        if (prop.BlockName == "")
                         {
-
-                            //TODO Масло маслянное
-                            Db.Handle h = new Db.Handle(prop.Handle.Value);
-                            id = acCurDb.GetObjectId(false, h, 0);
-
+                            try
+                            {
+                                id = acCurDb.GetObjectId(false, prop.Handle, 0);
+                            }
+                            catch (Exception e)
+                            {
+                                acEd.WriteMessage($"\nDynIN.IN-Ошибка поиска объекта: {e.Message}");
+                            }
                         }
-                        catch (Exception e)
+                        else
                         {
-
-                            acEd.WriteMessage($"\nDynIN.IN-Ошибка поиска объекта: {e.Message}");
-                            //return;
+                            if (Setting.CreateBlocReference && prop.BlockName != "")
+                            {
+                                id = Db.ObjectId.Null;
+                                id = AddEntity.CreateBlockReference(prop.BlockName);
+                            }
                         }
 
-                        //Если не нашли, идем к следующему объекту
-                        if (id == null) break;
+                        if (id.IsNull && !id.IsResident && !id.IsValid && id.IsErased) break;
 
                         //Полученный объект вообще блок, если нет то переходим к следующему
                         if (!id.ObjectClass.IsDerivedFrom(Rtm.RXObject.GetClass(typeof(Db.BlockReference)))) break;
@@ -147,8 +142,9 @@ namespace dynIN_dynOUT
                             }
                             catch (Autodesk.AutoCAD.Runtime.Exception ex)
                             {
-
+                                acEd.WriteMessage($"\nError: DynIN-IN -> {ex.Message}");
                             }
+
                         }
 
 

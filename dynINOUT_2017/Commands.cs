@@ -139,6 +139,14 @@ namespace dynIN_dynOUT
             DynOUT.OUT();
         }
 
+        [Rtm.CommandMethod("pp")]
+        static public void dynSET()
+        {
+            //Сохраняем данные в txt файл
+            //DynSET.OUT();
+
+           Db.ObjectId id =  AddEntity.CreateBlockReference("Otm_pola");
+        }
 
 
         [Rtm.CommandMethod("GetAllDynamicBlockParameters")]
