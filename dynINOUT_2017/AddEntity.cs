@@ -63,7 +63,7 @@ namespace dynIN_dynOUT
         /// <returns></returns>
         static public Db.ObjectId CreateBlockReference(string blockName)
         {
-            
+
             Db.ObjectId newBtrId = Db.ObjectId.Null;
 
             Db.Database db = Db.HostApplicationServices.WorkingDatabase;
@@ -75,29 +75,19 @@ namespace dynIN_dynOUT
                 if (acBlkTbl.Has(blockName))
                 {
                     Db.BlockTableRecord acBlkTblRec = tr.GetObject(acBlkTbl[blockName], Db.OpenMode.ForRead) as Db.BlockTableRecord;
-                    Db.ObjectId BRId= acBlkTblRec.GetBlockReferenceIds(true, true)[acBlkTblRec.GetBlockReferenceIds(true, true).Count-1];
 
-                    // копирование выбранных объектов в блок
-                    Db.ObjectIdCollection ids = new Db.ObjectIdCollection();
-                    ids.Add(BRId);
+                    Db.ObjectId BRId = Db.ObjectId.Null;
 
-                    Db.IdMapping mapping = new Db.IdMapping();
-                    db.DeepCloneObjects(ids, acBlkTbl[Db.BlockTableRecord.ModelSpace], mapping, false);
+                    Db.BlockTableRecord ms = (Db.BlockTableRecord)tr.GetObject(acBlkTbl[Db.BlockTableRecord.ModelSpace], Db.OpenMode.ForWrite);
+                    Db.BlockReference br = new Db.BlockReference(Gem.Point3d.Origin, acBlkTblRec.ObjectId);
+                    ms.AppendEntity(br);
+                    tr.AddNewlyCreatedDBObject(br, true);
 
-                    foreach (Db.IdPair pair in mapping)
-                    {
-                        if (pair.Key == BRId) newBtrId = pair.Value;
-                        //if (pair.IsCloned)
-                        //{
-                        //    var cloned = tran.GetObject(
-                        //        pair.Value, OpenMode.ForRead) as Entity;
-                        //    if (cloned != null)
-                        //    {
-                        //        cloned.UpgradeOpen();
-                        //        cloned.TransformBy(transform);
-                        //    }
-                        //}
-                    }
+                   //обновляем атрибуты
+                    acBlkTblRec.AttSync(true, false, false);
+
+                    newBtrId = br.ObjectId;
+
                 }
                 else
                 {

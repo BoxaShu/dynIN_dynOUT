@@ -62,6 +62,9 @@
     <Compile Include="..\dynINOUT_2017\AddEntity.cs">
       <Link>AddEntity.cs</Link>
     </Compile>
+    <Compile Include="..\dynINOUT_2017\BlockReferenceExtensionMethods.cs">
+      <Link>BlockReferenceExtensionMethods.cs</Link>
+    </Compile>
     <Compile Include="..\dynINOUT_2017\Commands.cs">
       <Link>Commands.cs</Link>
     </Compile>
@@ -80,7 +83,6 @@
     <Compile Include="..\dynINOUT_2017\Setting.cs">
       <Link>Setting.cs</Link>
     </Compile>
-    <Compile Include="BlockReferenceExtensionMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
