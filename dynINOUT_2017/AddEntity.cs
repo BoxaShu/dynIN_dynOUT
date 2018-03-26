@@ -74,28 +74,38 @@ namespace dynIN_dynOUT
                 Db.BlockTable acBlkTbl = tr.GetObject(db.BlockTableId, Db.OpenMode.ForRead) as Db.BlockTable;
                 if (acBlkTbl.Has(blockName))
                 {
-                    Db.BlockTableRecord acBlkTblRec = tr.GetObject(acBlkTbl[blockName], Db.OpenMode.ForRead) as Db.BlockTableRecord;
+                    Db.BlockTableRecord acBlkTblRec = tr.GetObject(acBlkTbl[blockName], Db.OpenMode.ForWrite) as Db.BlockTableRecord;
 
                     Db.ObjectId BRId = Db.ObjectId.Null;
 
-                    Db.BlockTableRecord ms = (Db.BlockTableRecord)tr.GetObject(acBlkTbl[Db.BlockTableRecord.ModelSpace], Db.OpenMode.ForWrite);
-                    Db.BlockReference br = new Db.BlockReference(Gem.Point3d.Origin, acBlkTblRec.ObjectId);
-                    ms.AppendEntity(br);
-                    tr.AddNewlyCreatedDBObject(br, true);
+                    using (Db.BlockTableRecord ms = (Db.BlockTableRecord)tr.GetObject(acBlkTbl[Db.BlockTableRecord.ModelSpace], Db.OpenMode.ForWrite))
+                    using (Db.BlockReference br = new Db.BlockReference(Gem.Point3d.Origin, acBlkTblRec.ObjectId))
+                    {
 
-                   //обновляем атрибуты
-                    acBlkTblRec.AttSync(true, false, false);
+                        ms.AppendEntity(br);
+                        tr.AddNewlyCreatedDBObject(br, true);
 
-                    newBtrId = br.ObjectId;
+                        //Получаем все определения атрибутов из определения блока
+                        IEnumerable<Db.AttributeDefinition> attdefs = acBlkTblRec.Cast<Db.ObjectId>()
+                            .Where(n => n.ObjectClass.Name == "AcDbAttributeDefinition")
+                            .Select(n => (Db.AttributeDefinition)tr.GetObject(n, Db.OpenMode.ForRead))
+                            .Where(n => !n.Constant);//Исключаем константные атрибуты, т.к. для них AttributeReference не создаются.
 
-                }
-                else
-                {
-                    return newBtrId;
+                        foreach (Db.AttributeDefinition attref in attdefs)
+                        {
+                            Db.AttributeReference ar = new Db.AttributeReference();
+                            ar.SetAttributeFromBlock(attref, br.BlockTransform);
+                            br.AttributeCollection.AppendAttribute(ar);
+                            tr.AddNewlyCreatedDBObject(ar, true);
+
+                        }
+
+
+                        newBtrId = br.ObjectId;
+                    }
                 }
                 tr.Commit();
             }
-
             return newBtrId;
         }
 

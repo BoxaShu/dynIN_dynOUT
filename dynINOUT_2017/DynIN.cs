@@ -116,10 +116,13 @@ namespace dynIN_dynOUT
                         if (!id.ObjectClass.IsDerivedFrom(Rtm.RXObject.GetClass(typeof(Db.BlockReference)))) break;
 
 
+
                         Db.BlockReference acBlRef = acTrans.GetObject(id, Db.OpenMode.ForWrite) as Db.BlockReference;
                         Db.BlockTableRecord blr = (Db.BlockTableRecord)acTrans.GetObject(acBlRef.DynamicBlockTableRecord,
                                                                     Db.OpenMode.ForRead);
 
+                        prop.Handle = acBlRef.Handle;
+                        prop.BlockName = acBlRef.EffectiveName();
 
                         PropertyInfo[] propsBlockRef = acBlRef.GetType().GetProperties();
                         PropertyInfo[] propElement = prop.GetType().GetProperties();
@@ -136,7 +139,7 @@ namespace dynIN_dynOUT
                                 object oo = propInfo.GetValue(prop, null);
                                 if (propBlock != null)
                                 {
-                                    propBlock.SetValue(acBlRef, propInfo.GetValue(prop, null));
+                                    propBlock.SetValue(acBlRef, propInfo.GetValue(prop, null),null);
                                 }
 
                             }
@@ -284,13 +287,35 @@ namespace dynIN_dynOUT
                         }
 
                         //обновляем атрибуты
-                        blr.AttSync(true, false, false);
+                        //blr.AttSync(true, false, false);
                         //маркеруем блок, как блок с измененный графикой
                         acBlRef.RecordGraphicsModified(true);
                     }
 
                     acTrans.Commit();
                 }
+
+
+
+
+                //обновляем атрибуты
+                using (Db.Transaction tr = acCurDb.TransactionManager.StartTransaction())
+                {
+                    Db.BlockTable acBlkTbl = tr.GetObject(acCurDb.BlockTableId, Db.OpenMode.ForRead) as Db.BlockTable;
+
+                    List<string> listBlockName = new List<string>();
+                    foreach (var i in propertyList)
+                        if (!listBlockName.Contains(i.BlockName)) listBlockName.Add(i.BlockName);
+
+
+                    foreach (var i in listBlockName)
+                    {
+                        Db.BlockTableRecord acBlkTblRec = tr.GetObject(acBlkTbl[i], Db.OpenMode.ForRead) as Db.BlockTableRecord;
+                        acBlkTblRec.AttSync(true, false, false);
+                    }
+                    tr.Commit();
+                }
+
             }
 
 

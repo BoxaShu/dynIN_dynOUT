@@ -24,7 +24,7 @@ namespace dynIN_dynOUT
     {
         public static string EffectiveName(this Db.BlockReference acBlockRef)
         {
-           string  blockName = acBlockRef.Name;
+            string blockName = acBlockRef.Name;
 
             if (acBlockRef.IsDynamicBlock)
             {
@@ -51,6 +51,8 @@ namespace dynIN_dynOUT
         /// Следует ли во вхождениях блока удалять лишние атрибуты (те, которых нет в определении блока).</param>
         /// <param name="setAttDefValues">
         /// Следует ли всем атрибутам, во вхождениях блока, назначить текущим значением значение по умолчанию.</param>
+        /// <param name="addSuperfluous">
+        /// Следует ли добавлять отсутствующие в blockReference атрибуты: true - добавлять</param>
         public static void AttSync(this Db.BlockTableRecord btr, bool directOnly, bool removeSuperfluous, bool setAttDefValues)
         {
             Db.Database db = btr.Database;
@@ -86,11 +88,11 @@ namespace dynIN_dynOUT
                         //Тэги существующих атрибутов во вхождении
                         IEnumerable<string> rtags = attrefs.Select(n => n.Tag);
 
+
                         //Если требуется - удаляем те атрибуты, для которых нет определения 
                         //в составе определения блока
                         if (removeSuperfluous)
-                            foreach (Db.AttributeReference attref in attrefs.Where(n => rtags
-                                .Except(dtags).Contains(n.Tag)))
+                            foreach (Db.AttributeReference attref in attrefs.Where(n => rtags.Except(dtags).Contains(n.Tag)))
                                 attref.Erase(true);
 
                         //Свойства существующих атрибутов синхронизируем со свойствами их определений
@@ -162,6 +164,9 @@ namespace dynIN_dynOUT
                             //Тэги существующих определений атрибутов
                             IEnumerable<string> dtags = attdefs.Select(n => n.Tag);
                             IEnumerable<string> dtags2 = attdefs2.Select(n => n.Tag);
+
+
+
 
                             //1. Удаляем лишние
                             foreach (Db.AttributeDefinition attdef in attdefs2.Where(n => !dtags.Contains(n.Tag)))

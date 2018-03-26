@@ -180,7 +180,7 @@ namespace dynIN_dynOUT
                                             try
                                             {
                                                 System.Reflection.PropertyInfo propBlock = propsBlockRef.Where(x => x.Name == propInfo.Name).FirstOrDefault();
-                                                if (propBlock != null) propInfo.SetValue(prop, propBlock.GetValue(acBlRef, null));
+                                                if (propBlock != null) propInfo.SetValue(prop, propBlock.GetValue(acBlRef, null), null);
 
                                             }
                                             catch (Autodesk.AutoCAD.Runtime.Exception ex)

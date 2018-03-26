@@ -193,7 +193,7 @@ namespace dynIN_dynOUT
                             if (propBlock != null)
                             {
                                 object val1 = propBlock.GetValue(blockRef, null);
-                                prop.SetValue(mtc, propBlock.GetValue(blockRef, null));
+                                prop.SetValue(mtc, propBlock.GetValue(blockRef, null), null);
 
 
                                 dd.Add(prop.Name, val1);
