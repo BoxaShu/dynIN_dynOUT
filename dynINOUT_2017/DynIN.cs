@@ -87,6 +87,12 @@ namespace dynIN_dynOUT
                 using (Db.Transaction acTrans = acCurDb.TransactionManager.StartTransaction())
                 {
 
+                    //прогресс бар
+                    Rtm.ProgressMeter pm = new Rtm.ProgressMeter();
+                    pm.Start("Progress of processing BlockReference");
+                    pm.SetLimit(propertyList.Count);
+
+
                     foreach (var prop in propertyList)
                     {
                         Db.ObjectId id = Db.ObjectId.Null;
@@ -290,8 +296,10 @@ namespace dynIN_dynOUT
                         //blr.AttSync(true, false, false);
                         //маркеруем блок, как блок с измененный графикой
                         acBlRef.RecordGraphicsModified(true);
+                        pm.MeterProgress();
                     }
-
+                    pm.Stop();
+                    
                     acTrans.Commit();
                 }
 
@@ -301,6 +309,13 @@ namespace dynIN_dynOUT
                 //обновляем атрибуты
                 using (Db.Transaction tr = acCurDb.TransactionManager.StartTransaction())
                 {
+
+                    //прогресс бар
+                    Rtm.ProgressMeter pm = new Rtm.ProgressMeter();
+                    pm.Start("Progress of processing update AttributeReference");
+                    pm.SetLimit(propertyList.Count);
+
+
                     Db.BlockTable acBlkTbl = tr.GetObject(acCurDb.BlockTableId, Db.OpenMode.ForRead) as Db.BlockTable;
 
                     List<string> listBlockName = new List<string>();
@@ -312,7 +327,10 @@ namespace dynIN_dynOUT
                     {
                         Db.BlockTableRecord acBlkTblRec = tr.GetObject(acBlkTbl[i], Db.OpenMode.ForRead) as Db.BlockTableRecord;
                         acBlkTblRec.AttSync(true, false, false);
+                        pm.MeterProgress();
                     }
+                    pm.Stop();
+
                     tr.Commit();
                 }
 
