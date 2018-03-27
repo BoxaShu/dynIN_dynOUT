@@ -139,15 +139,16 @@ namespace dynIN_dynOUT
             DynOUT.OUT();
         }
 
-
-        [Rtm.CommandMethod("dynSET")]
+        [Rtm.CommandMethod("pp")]
         static public void dynSET()
         {
-            //Тут должно вызываться окно настроек программы
+            //Сохраняем данные в txt файл
+            //DynSET.OUT();
+
+           Db.ObjectId id =  AddEntity.CreateBlockReference("Otm_pola");
         }
 
 
-#if(DEBUG)
         [Rtm.CommandMethod("GetAllDynamicBlockParameters")]
         public void GetAllDynamicBlockParameters()
         {
@@ -161,18 +162,122 @@ namespace dynIN_dynOUT
                 Db.ObjectId id = result.ObjectId;
                 using (Db.Transaction trans = db.TransactionManager.StartTransaction())
                 {
-                    var blockRef = (Db.BlockReference)trans.GetObject(id, Db.OpenMode.ForRead);
+                    var blockRef = (Db.BlockReference)trans.GetObject(id, Db.OpenMode.ForWrite);
+
+
                     Db.DynamicBlockReferencePropertyCollection properties = blockRef.DynamicBlockReferencePropertyCollection;
                     for (int i = 0; i < properties.Count; i++)
                     {
                         Db.DynamicBlockReferenceProperty property = properties[i];
+
                         editor.WriteMessage("\n" + property.PropertyName + " | " + property.PropertyTypeCode + " | " + property.Value);
+                        //property.Value = (double)25;
+
                     }
+
+                    Property mtc = new Property(blockRef.Handle);
+
+                    //http://adndevblog.typepad.com/autocad/2012/05/comparing-properties-of-two-entities.html
+                    System.Reflection.PropertyInfo[] propsBlockRef = blockRef.GetType().GetProperties();
+                    System.Reflection.PropertyInfo[] propElement = mtc.GetType().GetProperties();
+
+                    Dictionary<string, object> dd = new Dictionary<string, object>();
+
+                    foreach (System.Reflection.PropertyInfo prop in propElement)
+                    {
+
+
+                        try
+                        {
+                            System.Reflection.PropertyInfo propBlock = propsBlockRef.Where(x => x.Name == prop.Name).FirstOrDefault();
+                            if (propBlock != null)
+                            {
+                                object val1 = propBlock.GetValue(blockRef, null);
+                                prop.SetValue(mtc, propBlock.GetValue(blockRef, null), null);
+
+
+                                dd.Add(prop.Name, val1);
+                            }
+                        }
+                        catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                        {
+
+                        }
+                    }
+
+
+
+
+
+
+                    trans.Commit();
                 }
             }
         }
-#endif
 
+
+        // Информация о полях и реализуемых интерфейсах 
+        public static List<string> FieldInterfaceInfo<T>(T obj) where T : class
+        {
+            List<string> outList = new List<string>();
+
+            Type t = typeof(T);
+            outList.Add("\n*** Реализуемые интерфейсы ***\n");
+            var im = t.GetInterfaces();
+            foreach (Type tp in im)
+                outList.Add("--> " + tp.Name);
+
+            outList.Add("\n*** Поля и свойства ***\n");
+            FieldInfo[] fieldNames = t.GetFields();
+            foreach (FieldInfo fil in fieldNames)
+                outList.Add("--> " + fil.ReflectedType.Name + " " + fil.Name + "\n");
+
+            return outList;
+        }
+
+        // В данном классе определены методы использующие рефлексию
+        // Данный метод выводит информацию о содержащихся в классе методах
+        public static List<string> MethodReflectInfo<T>(T obj) where T : class
+        {
+            List<string> outList = new List<string>();
+
+            Type t = typeof(T);
+            // Получаем коллекцию методов
+            MethodInfo[] MArr = t.GetMethods();
+            outList.Add($"*** Список методов класса {obj.ToString()} ***\n");
+
+            // Вывести методы
+            foreach (MethodInfo m in MArr)
+            {
+
+                string s = (" --> " + m.ReturnType.Name + " \t" + m.Name + "(");
+                // Вывести параметры методов
+                ParameterInfo[] p = m.GetParameters();
+                for (int i = 0; i < p.Length; i++)
+                {
+                    s += (p[i].ParameterType.Name + " " + p[i].Name);
+                    if (i + 1 < p.Length) s += (", ");
+                }
+
+                outList.Add(s += (")\n"));
+            }
+
+            return outList;
+        }
+
+
+        // В данном классе определены методы использующие рефлексию
+        // Данный метод выводит информацию о содержащихся в классе методах
+        public static List<string> MethodInfo<T>(T obj) where T : class
+        {
+            List<string> outList = new List<string>();
+            // Получаем коллекцию методов
+            MethodInfo[] MArr = typeof(T).GetMethods();
+            // Вывести методы
+            foreach (MethodInfo m in MArr)
+                outList.Add(m.Name);
+            return outList;
+        }
 
     }
 }

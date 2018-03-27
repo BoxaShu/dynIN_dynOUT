@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dynINOUT_2019", "dynINOUT_2
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dynINOUT_UI", "dynINOUT_UI\dynINOUT_UI.csproj", "{8D1BEF8A-7F55-4788-B3E2-FD07F638A774}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "debug", "debug\debug.csproj", "{3F6B9F9A-5A32-4EC5-8541-635FFD46A8CD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{8D1BEF8A-7F55-4788-B3E2-FD07F638A774}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8D1BEF8A-7F55-4788-B3E2-FD07F638A774}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8D1BEF8A-7F55-4788-B3E2-FD07F638A774}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F6B9F9A-5A32-4EC5-8541-635FFD46A8CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F6B9F9A-5A32-4EC5-8541-635FFD46A8CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F6B9F9A-5A32-4EC5-8541-635FFD46A8CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F6B9F9A-5A32-4EC5-8541-635FFD46A8CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

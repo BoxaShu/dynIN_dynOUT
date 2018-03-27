@@ -127,8 +127,8 @@ namespace dynIN_dynOUT
                                     //Фильтр по именам блоков
                                     if (_blockNameList.Contains(acBlRef.EffectiveName()))
                                     {
-                                        Property prop = new Property();
-                                        prop.Handle = acEnt.Handle.Value;
+                                        Property prop = new Property(acBlRef.Handle);
+
 
                                         if (blr.HasAttributeDefinitions)
                                         {
@@ -168,6 +168,26 @@ namespace dynIN_dynOUT
 
                                             }
                                         }
+
+
+
+                                        //http://adndevblog.typepad.com/autocad/2012/05/comparing-properties-of-two-entities.html
+                                        System.Reflection.PropertyInfo[] propsBlockRef = acBlRef.GetType().GetProperties();
+                                        System.Reflection.PropertyInfo[] propElement = prop.GetType().GetProperties();
+
+                                        foreach (System.Reflection.PropertyInfo propInfo in propElement)
+                                        {
+                                            try
+                                            {
+                                                System.Reflection.PropertyInfo propBlock = propsBlockRef.Where(x => x.Name == propInfo.Name).FirstOrDefault();
+                                                if (propBlock != null) propInfo.SetValue(prop, propBlock.GetValue(acBlRef, null), null);
+
+                                            }
+                                            catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                                            {
+
+                                            }
+                                        }
                                         propertyList.Add(prop);
                                     }
                                 }   //Проверка, что объект это ссылка на блок
@@ -183,6 +203,7 @@ namespace dynIN_dynOUT
             //4.1 Считаем общее количество уникальны тегов атрибутов и уникальных названй динамических свойств
             List<string> unicAttName = new List<string>();
             List<string> unicDynName = new List<string>();
+            List<string> unicPropnName = new List<string>();
 
             foreach (var s in propertyList)
             {
@@ -192,6 +213,8 @@ namespace dynIN_dynOUT
                 foreach (var i in s.DynProp)
                     if (!unicDynName.Contains("d_" + i.Key)) unicDynName.Add("d_" + i.Key);
 
+                foreach (var i in s.GetType().GetProperties())
+                    if (!unicPropnName.Contains("p_" + i.Name)) unicPropnName.Add("p_" + i.Name);
             }
 
 
@@ -202,42 +225,14 @@ namespace dynIN_dynOUT
             rowHead.Add("Handle");
             rowHead.AddRange(unicAttName);
             rowHead.AddRange(unicDynName);
+            rowHead.AddRange(unicPropnName);
+
+
             rowList.Add(rowHead.ToArray());
 
-            int colCount = rowHead.Count;
-
-
-
-
             foreach (var s in propertyList)
-            {
-                //Создаем массив длинной , равной длинне заголовка
-                string[] row = new string[colCount];
-                //Все ячейки массива заполняем по умолчанию табуляциями
-                for (int i = 0; i < row.Length; i++)
-                    row[i] = "";
+                rowList.Add(s.Gets(rowHead));
 
-                //В первую ячейку массива пишу хендл объекта
-                row[0] = $"\'{s.Handle.ToString()}";
-
-
-                foreach (var i in s.Attribut)
-                {
-                    int indxUnicAttName = unicAttName.FindIndex(x => x == "a_" + i.Key);
-                    row[1 + indxUnicAttName] = i.Value;
-                }
-
-
-                foreach (var i in s.DynProp)
-                {
-                    int indxUnicDynName = unicDynName.FindIndex(x => x == "d_" + i.Key);
-                    row[1 + unicAttName.Count + indxUnicDynName] = i.Value.ToString();
-                }
-
-
-                //Добавляю 
-                rowList.Add(row);
-            }
 
 
             //5. Выводим собранные данные в файл

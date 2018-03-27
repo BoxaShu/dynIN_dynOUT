@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Reflection;
+
 using Autodesk.AutoCAD.Windows;
 using App = Autodesk.AutoCAD.ApplicationServices;
 using cad = Autodesk.AutoCAD.ApplicationServices.Application;
@@ -44,20 +46,6 @@ namespace dynIN_dynOUT
             List<string> fileLines = new List<string>();
             try
             {
-                //using (StreamReader sr = new StreamReader(fileName, System.Text.Encoding.Default))
-                //{
-                //   fileLines = sr.ReadToEnd().Split('\n').ToList();
-                //}
-
-                //using (StreamWriter sw = new StreamWriter(fileName, false, System.Text.Encoding.GetEncoding(1251)))
-                //{
-                //    foreach (var s in rowList)
-                //    {
-                //        sw.WriteLine(String.Join("\t", s));
-                //    }
-                //}
-
-
                 fileLines = System.IO.File.ReadAllLines(fileName, System.Text.Encoding.GetEncoding(1251)).ToList();
             }
             catch (Exception e)
@@ -69,75 +57,15 @@ namespace dynIN_dynOUT
 
 
             List<Property> propertyList = new List<Property>();
-
             //Парсим первую строку
-            List<string> unicAttName = new List<string>();
-            List<string> unicDynName = new List<string>();
-            List<string> unicPropName = new List<string>();
-
-
-            List<string> l = fileLines[0].Split(';').ToList();
-            foreach (string s in l)
-            {
-                if (s.Length > 2)
-                {
-                    if (s.Substring(0, 2) == "a_")
-                    {
-                        unicAttName.Add(s.Substring(2, s.Length - 2));
-                    }
-                    if (s.Substring(0, 2) == "d_")
-                    {
-                        unicDynName.Add(s.Substring(2, s.Length - 2));
-                    }
-                    if (s.Substring(0, 2) == "p_")
-                    {
-                        unicDynName.Add(s.Substring(2, s.Length - 2));
-                    }
-
-                }
-            }
-
+            List<string> rowHead = fileLines[0].Split(';').ToList();
             //Парсим основное тело
             for (int i = 1; i < fileLines.Count; i++)
             {
                 Property prop = new Property();
-
-                l = fileLines[i].Split(';').ToList();
-
-                prop.Handle = long.Parse(l[0].Replace("\'", ""));
-
-                //Нужно соотнести значение с названием параметра
-                for (int j = 1; j < l.Count; j++)
-                {
-                    if (l[j] != "")
-                    {
-                        //Если индекс ячейки со значением лежит в обрасти занчений атрибутов
-                        // TODO заменить постоянный расчет диапазонов на простые переменные
-                        if (1 + j > 0 && 1 + j <= 1 + unicAttName.Count)
-                        {
-                            prop.Attribut.Add(unicAttName[j - 1], l[j]);
-                        }
-
-
-                        if (1 + j > 1 + unicAttName.Count)
-                        {
-                            int p = j - 1 - unicAttName.Count;
-                            try
-                            {
-                                prop.DynProp.Add(unicDynName[p], l[j]);
-                            }
-                            catch (ArgumentOutOfRangeException e)
-                            {
-                                acEd.WriteMessage($"\nj={j}; unicDynName[p]={unicDynName[p]}; l[j]={l[j]} ");
-                                acEd.WriteMessage($"\n{e.Message}");
-                            }
-
-                        }
-
-                    }
-                }
-
-                propertyList.Add(prop);
+                //bool t = prop.Sets(rowHead, fileLines[i]);
+                if (prop.Sets(rowHead, fileLines[i]))
+                    propertyList.Add(prop);
             }
 
 
@@ -149,39 +77,86 @@ namespace dynIN_dynOUT
             using (App.DocumentLock docloc = acDoc.LockDocument())
             {
 
+                //Прежде всего пройдемся по всем объектам 
+                //и посмотрим все ли слои есть в базе
+                foreach (var i in propertyList)
+                    AddEntity.CreateLayer(i.Layer, Setting.CreateLayer);
+
 
                 // старт транзакции
-                using (Db.Transaction acTrans = acCurDb.TransactionManager.StartOpenCloseTransaction())
+                using (Db.Transaction acTrans = acCurDb.TransactionManager.StartTransaction())
                 {
+
+                    //прогресс бар
+                    Rtm.ProgressMeter pm = new Rtm.ProgressMeter();
+                    pm.Start("Progress of processing BlockReference");
+                    pm.SetLimit(propertyList.Count);
+
 
                     foreach (var prop in propertyList)
                     {
                         Db.ObjectId id = Db.ObjectId.Null;
-                        try
+                        if (prop.BlockName == "")
                         {
-                            Db.Handle h = new Db.Handle(prop.Handle);
-                            id = acCurDb.GetObjectId(false, h, 0);
-
+                            try
+                            {
+                                id = acCurDb.GetObjectId(false, prop.Handle, 0);
+                            }
+                            catch (Exception e)
+                            {
+                                acEd.WriteMessage($"\nDynIN.IN-Ошибка поиска объекта: {e.Message}");
+                            }
                         }
-                        catch (Exception e)
+                        else
                         {
-
-                            acEd.WriteMessage($"\nDynIN.IN-Ошибка поиска объекта: {e.Message}");
-                            //return;
+                            if (Setting.CreateBlocReference && prop.BlockName != "")
+                            {
+                                id = Db.ObjectId.Null;
+                                id = AddEntity.CreateBlockReference(prop.BlockName);
+                            }
                         }
 
-                        //Если не нашли, идем к следующему объекту
-                        if (id == null) break;
+                        if (id.IsNull && !id.IsResident && !id.IsValid && id.IsErased) break;
 
                         //Полученный объект вообще блок, если нет то переходим к следующему
                         if (!id.ObjectClass.IsDerivedFrom(Rtm.RXObject.GetClass(typeof(Db.BlockReference)))) break;
+
 
 
                         Db.BlockReference acBlRef = acTrans.GetObject(id, Db.OpenMode.ForWrite) as Db.BlockReference;
                         Db.BlockTableRecord blr = (Db.BlockTableRecord)acTrans.GetObject(acBlRef.DynamicBlockTableRecord,
                                                                     Db.OpenMode.ForRead);
 
-                        //Тут назначаем атрибуты блока
+                        prop.Handle = acBlRef.Handle;
+                        prop.BlockName = acBlRef.EffectiveName();
+
+                        PropertyInfo[] propsBlockRef = acBlRef.GetType().GetProperties();
+                        PropertyInfo[] propElement = prop.GetType().GetProperties();
+
+                        foreach (PropertyInfo propInfo in propElement)
+                        {
+                            try
+                            {
+                                //System.Reflection.PropertyInfo propBlock = propsBlockRef.Where(x => x.Name == propInfo.Name).FirstOrDefault();
+                                //if (propBlock != null) propInfo.SetValue(prop, propBlock.GetValue(acBlRef, null));
+
+                                PropertyInfo propBlock = propsBlockRef.Where(x => x.Name == propInfo.Name).FirstOrDefault();
+
+                                object oo = propInfo.GetValue(prop, null);
+                                if (propBlock != null)
+                                {
+                                    propBlock.SetValue(acBlRef, propInfo.GetValue(prop, null),null);
+                                }
+
+                            }
+                            catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                            {
+                                acEd.WriteMessage($"\nError: DynIN-IN -> {ex.Message}");
+                            }
+
+                        }
+
+
                         if (blr.HasAttributeDefinitions)
                         {
                             Db.AttributeCollection attrCol = acBlRef.AttributeCollection;
@@ -199,6 +174,7 @@ namespace dynIN_dynOUT
                                         {
                                             acAttRef.UpgradeOpen();
                                             acAttRef.TextString = i.Value;
+                                            //acAttRef.RecordGraphicsModified(true);
                                             acAttRef.DowngradeOpen();
                                             break;
                                         }
@@ -210,8 +186,6 @@ namespace dynIN_dynOUT
                         }  //Проверка наличия атрибутов
 
 
-
-                        //Тут назначаем динамические свойства блока
                         Db.DynamicBlockReferencePropertyCollection acBlockDynProp = acBlRef.DynamicBlockReferencePropertyCollection;
                         if (acBlockDynProp != null)
                         {
@@ -318,17 +292,57 @@ namespace dynIN_dynOUT
                             }
                         }
 
-                        //Тут назначаем свойства самого блока
-
-
+                        //обновляем атрибуты
+                        //blr.AttSync(true, false, false);
+                        //маркеруем блок, как блок с измененный графикой
+                        acBlRef.RecordGraphicsModified(true);
+                        pm.MeterProgress();
                     }
+                    pm.Stop();
+                    
                     acTrans.Commit();
                 }
+
+
+
+
+                //обновляем атрибуты
+                using (Db.Transaction tr = acCurDb.TransactionManager.StartTransaction())
+                {
+
+                    //прогресс бар
+                    Rtm.ProgressMeter pm = new Rtm.ProgressMeter();
+                    pm.Start("Progress of processing update AttributeReference");
+                    pm.SetLimit(propertyList.Count);
+
+
+                    Db.BlockTable acBlkTbl = tr.GetObject(acCurDb.BlockTableId, Db.OpenMode.ForRead) as Db.BlockTable;
+
+                    List<string> listBlockName = new List<string>();
+                    foreach (var i in propertyList)
+                        if (!listBlockName.Contains(i.BlockName)) listBlockName.Add(i.BlockName);
+
+
+                    foreach (var i in listBlockName)
+                    {
+                        Db.BlockTableRecord acBlkTblRec = tr.GetObject(acBlkTbl[i], Db.OpenMode.ForRead) as Db.BlockTableRecord;
+                        acBlkTblRec.AttSync(true, false, false);
+                        pm.MeterProgress();
+                    }
+                    pm.Stop();
+
+                    tr.Commit();
+                }
+
             }
 
 
             //5. Оповещаем пользователя о завершении работы
-            acEd.WriteMessage($"\nЭкспорт завершен.");
+            //Перерисовать графику
+            //http://adn-cis.org/forum/index.php?topic=8361.0
+            acDoc.TransactionManager.FlushGraphics();
+
+            acEd.WriteMessage($"\nDone.");
         }
 
 
