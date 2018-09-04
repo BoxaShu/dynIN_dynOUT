@@ -167,7 +167,7 @@ namespace dynIN_dynOUT
                     {
                         Db.DynamicBlockReferenceProperty property = properties[i];
 
-                        editor.WriteMessage("\n" + property.PropertyName + " | " + property.PropertyTypeCode + " | " + property.Value);
+                        editor.WriteMessage($"\n{property.PropertyName} | {property.PropertyTypeCode} | {property.Value}");
                         //property.Value = (double)25;
 
                     }
