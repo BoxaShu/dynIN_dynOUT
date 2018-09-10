@@ -144,7 +144,7 @@ namespace dynIN_dynOUT
         {
             //Сохраняем данные в txt файл
             //DynSET.OUT();
-
+        }
 
         [Rtm.CommandMethod("GetAllDynamicBlockParameters")]
         public void GetAllDynamicBlockParameters()

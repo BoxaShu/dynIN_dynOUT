@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
+using System.Windows;
+
 
 using Autodesk.AutoCAD.Windows;
 using App = Autodesk.AutoCAD.ApplicationServices;
@@ -32,15 +34,32 @@ namespace dynIN_dynOUT
             Ed.Editor acEd = acDoc.Editor;
 
             //1. Читаем и парсим файл
-            OpenFileDialog openFileDialog = new OpenFileDialog("Выберите CSV файл",
-                                          "*.csv",
-                                          "csv",
-                                          "Выбор файла",
-                                          OpenFileDialog.OpenFileDialogFlags.NoUrls);
+            //OpenFileDialog openFileDialog = new OpenFileDialog("Выберите CSV файл",
+            //                              "*.csv",
+            //                              "csv",
+            //                              "Выбор файла",
+            //                              OpenFileDialog.OpenFileDialogFlags.NoUrls & OpenFileDialog.OpenFileDialogFlags.DefaultIsFolder );
 
-            if (openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            string fileName = openFileDialog.Filename;
 
+
+
+
+            //if (openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //string fileName = openFileDialog.Filename;
+
+
+
+            System.Windows.Forms.OpenFileDialog openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog1.Title = "Выберите CSV файл";
+            openFileDialog1.Filter = "csv файлы (*.csv)|*.csv|Все файлы (*.*)|*.*";
+            openFileDialog1.FileName = "";
+            openFileDialog1.InitialDirectory = Settings.Data.Lastpath;
+            openFileDialog1.RestoreDirectory = false;
+
+            if (openFileDialog1.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            string fileName = openFileDialog1.FileName;
+
+            Settings.Data.Lastpath = new FileInfo(fileName).DirectoryName;
 
 
             List<string> fileLines = new List<string>();
@@ -80,7 +99,23 @@ namespace dynIN_dynOUT
                 //Прежде всего пройдемся по всем объектам 
                 //и посмотрим все ли слои есть в базе
                 foreach (var i in propertyList)
-                    AddEntity.CreateLayer(i.Layer, Setting.CreateLayer);
+                {
+                    try
+                    {
+                        // Validate the provided symbol table name
+                        // И проверим имя слоя на плохие символы
+                        Db.SymbolUtilityServices.ValidateSymbolName(i.Layer, false);
+                        AddEntity.CreateLayer(i.Layer, Settings.Data.CreateLayer);
+                    }
+                    catch
+                    {
+                        // An exception has been thrown, indicating that
+                        // the name is invalid
+                        acEd.WriteMessage($"\n{i.Layer} is an invalid Layer name and it name replace to \"0\".");
+                        i.Layer = "0";
+                    }
+                }
+                    
 
 
                 // старт транзакции
@@ -109,7 +144,7 @@ namespace dynIN_dynOUT
                         }
                         else
                         {
-                            if (Setting.CreateBlocReference && prop.BlockName != "")
+                            if (Settings.Data.CreateBlocReference && prop.BlockName != "")
                             {
                                 id = Db.ObjectId.Null;
                                 id = AddEntity.CreateBlockReference(prop.BlockName);

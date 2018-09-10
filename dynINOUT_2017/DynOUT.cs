@@ -28,18 +28,35 @@ namespace dynIN_dynOUT
 
         internal static void OUT()
         {
-
+            //string statrPath = Settings.Data.Lastpath ;
 
             //1. Подражая Attout сначала выбираем файл в который будет сохраняться информация
             // TODO по умолчанию имя нового файла должно соответствовать имени чертежа
-            SaveFileDialog openFileDialog = new SaveFileDialog("Выберите CSV файл",
-                                                      "*.csv",
-                                                      "csv",
-                                                      "Выбор файла",
-                                                      SaveFileDialog.SaveFileDialogFlags.NoUrls);
 
-            if (openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            string fileName = openFileDialog.Filename;
+            //SaveFileDialog openFileDialog = new SaveFileDialog("Выберите CSV файл",
+            //                                          "*.csv",
+            //                                          "csv",
+            //                                          "Выбор файла",
+            //                                          SaveFileDialog.SaveFileDialogFlags.NoUrls);
+            //if (openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //string fileName = openFileDialog.Filename;
+
+
+
+            System.Windows.Forms.SaveFileDialog openFileDialog1;
+            openFileDialog1 = new System.Windows.Forms.SaveFileDialog();
+            openFileDialog1.Title = "Выберите CSV файл";
+            openFileDialog1.Filter = "csv файлы (*.csv)|*.csv|Все файлы (*.*)|*.*";
+            openFileDialog1.FileName = "";
+            openFileDialog1.InitialDirectory = Settings.Data.Lastpath;
+            openFileDialog1.RestoreDirectory = false;
+            
+            if (openFileDialog1.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            string fileName = openFileDialog1.FileName;
+
+
+
+            Settings.Data.Lastpath= new FileInfo(fileName).DirectoryName;
 
             // Получение текущего документа и базы данных
             App.Document acDoc = App.Application.DocumentManager.MdiActiveDocument;

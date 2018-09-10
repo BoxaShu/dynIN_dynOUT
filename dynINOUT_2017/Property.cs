@@ -103,7 +103,7 @@ namespace dynIN_dynOUT
                         if (name == "Layer")
                         {
                             //Проверяем, есть ли такой слой, если нет и создание слоев запрещено, то пишем "0"
-                            if (!AddEntity.CreateLayer(l[j], false) && !Setting.CreateLayer)
+                            if (!AddEntity.CreateLayer(l[j], false) && !Settings.Data.CreateLayer)
                             {
                                 this.Layer = "0";
                             }
